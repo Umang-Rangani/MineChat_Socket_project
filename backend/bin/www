@@ -8,7 +8,7 @@ var app = require('../app')
 var debug = require('debug')('server:server')
 var http = require('http')
 
-// !
+// ! 1
 var { Server } = require('socket.io')
 var dotenv = require('dotenv')
 
@@ -31,7 +31,7 @@ var server = http.createServer(app)
  * Create Socket.IO server.
  */
 
-// !
+// ! 2
 var io = new Server(server, {
   cors: {
     origin: process.env.ALLOWED_ORIGIN,

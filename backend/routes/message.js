@@ -32,4 +32,15 @@ router.get('/:user1/:user2', async (req, res) => {
   }
 })
 
+router.get('/', async (req, res) => {
+  try {
+    const data = await Message.find()
+    res.json(data)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+
+
 module.exports = router

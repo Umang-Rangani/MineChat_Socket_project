@@ -15,9 +15,12 @@ export default function UserList() {
   const [usersData, setUsersData] = useState([])
   const [search, setSearch] = useState('')
 
-  const [selectedId, setSelectedId] = useState(null)
-  const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
+
+  // 2nd person
+  const [selectedId, setSelectedId] = useState(null)
+
+  const [message, setMessage] = useState('')
 
   // ! users Logic
   const getUsersData = async () => {
@@ -33,14 +36,14 @@ export default function UserList() {
     getUsersData()
   }, [])
 
-  // SEARCH
+  // ! users ma input searching kre 
   const filteredUsers = usersData.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()))
-
   // console.log('filteredUsers', filteredUsers)
 
-  // console.log('user', user)
-  // ! chating Logic
 
+  // console.log('user', user)
+
+  // ! chating Logic
   // SOCKET CONNECT + JOIN
   useEffect(() => {
     if (!user?._id) return
@@ -70,9 +73,9 @@ export default function UserList() {
     // user._id => myID
     // userId => youID
 
+    // ! message ne save mate ni get API
     try {
       const res = await axiosInstance.get(`/message/${user._id}/${userId}`)
-
       setMessages(res.data)
     } catch (error) {
       console.log('Get Messages Error:', error)
@@ -80,7 +83,7 @@ export default function UserList() {
   }
 
   // SEND MESSAGE
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault()
 
     // console.log('sending')
@@ -158,7 +161,6 @@ export default function UserList() {
 
         <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto">
           {filteredUsers.map((user) => {
-
             // console.log(user._id === selectedId ? "black" : "green");
             // console.log(user);
             return (
