@@ -58,10 +58,19 @@ function setupSocket(io) {
       if (!userId) return
 
       onlineUsers.set(userId, socket.id)
-
       socket.userId = userId
 
-      console.log(`${userId} joined with socket ${socket.id}`)
+      // Send current online users to the newly joined user
+      socket.emit('onlineUsers', {
+        users: Array.from(onlineUsers.keys()),
+      })
+
+      // Tell all OTHER users that this user is online
+      socket.broadcast.emit('userOnline', {
+        userId,
+      })
+
+      console.log('Online users:', Array.from(onlineUsers.keys()))
     })
 
     // ! privateMessage send => GET & save database
@@ -87,19 +96,19 @@ function setupSocket(io) {
           seen: false,
         })
 
-
-
         // ! પછી sender અને receiver બંનેને message મળે:
         // 1. SEND MESSAGE TO SENDER
         socket.emit('privateMessage', msg)
+
+        console.log(msg);
+        
+
+      
 
         // 2. SEND MESSAGE TO RECEIVER
         if (receiverSocketId) {
           io.to(receiverSocketId).emit('privateMessage', msg)
         }
-
-
-
       } catch (error) {
         console.error('Message Error:', error)
 
@@ -111,12 +120,23 @@ function setupSocket(io) {
 
     // DISCONNECT
 
-    socket.on('disconnect', () => {
-      if (socket.userId) {
-        onlineUsers.delete(socket.userId)
-      }
+    socket.on('disconnect', async () => {
+      if (!socket.userId) return
 
-      console.log('Socket Disconnected:', socket.id)
+      onlineUsers.delete(socket.userId)
+
+      const lastSeen = new Date()
+
+      await Message.findByIdAndUpdate(socket.userId, {
+        lastSeen,
+      })
+
+      socket.broadcast.emit('userOffline', {
+        userId: socket.userId,
+        lastSeen,
+      })
+
+      console.log('Online users:', Array.from(onlineUsers.keys()))
     })
   })
 }
@@ -124,12 +144,9 @@ function setupSocket(io) {
 // ! Socket setup export
 app.setupSocket = setupSocket
 
-
-
 app.use(function (req, res, next) {
   next(createError(404))
 })
-
 
 app.use(function (err, req, res, next) {
   res.locals.message = err.message

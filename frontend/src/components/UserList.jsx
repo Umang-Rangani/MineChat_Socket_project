@@ -5,7 +5,7 @@ import { useUser } from '../context/userProvider'
 import { io } from 'socket.io-client'
 
 // ! socket
-const socket = io('http://192.168.1.5:3000', {
+const socket = io('http://192.168.1.6:3000', {
   withCredentials: true,
 })
 
@@ -21,6 +21,7 @@ export default function UserList() {
   const [selectedId, setSelectedId] = useState(null)
 
   const [message, setMessage] = useState('')
+  const [onlineUsers, setOnlineUsers] = useState([])
 
   // ! users Logic
   const getUsersData = async () => {
@@ -36,32 +37,74 @@ export default function UserList() {
     getUsersData()
   }, [])
 
-  // ! users ma input searching kre 
+  // ! users ma input searching kre
   const filteredUsers = usersData.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()))
   // console.log('filteredUsers', filteredUsers)
-
 
   // console.log('user', user)
 
   // ! chating Logic
   // SOCKET CONNECT + JOIN
+  // ! SOCKET CONNECT + JOIN
   useEffect(() => {
     if (!user?._id) return
 
-    // Current user socket join POST
-    socket.emit('joinChat', user._id)
-
-    // Receive message
+    // RECEIVE MESSAGE
     const receiveMessage = (data) => {
       console.log('Message received:', data)
 
-      setMessages((prev) => [...prev, data])
+      setMessages((prev) => {
+        // duplicate message avoid
+        if (prev.some((msg) => msg._id === data._id)) {
+          return prev
+        }
+
+        return [...prev, data]
+      })
     }
 
+    // ALL ONLINE USERS
+    const handleOnlineUsers = ({ users }) => {
+      console.log('Online users:', users)
+      setOnlineUsers(users)
+    }
+
+    // USER ONLINE
+    const handleUserOnline = ({ userId }) => {
+      console.log('User online:', userId)
+
+      setOnlineUsers((prev) => {
+        if (prev.includes(userId)) {
+          return prev
+        }
+
+        return [...prev, userId]
+      })
+    }
+
+    // USER OFFLINE
+    const handleUserOffline = ({ userId, lastSeen }) => {
+      console.log('User offline:', userId, lastSeen)
+
+      setOnlineUsers((prev) => prev.filter((id) => id !== userId))
+
+      setUsersData((prev) => prev.map((u) => (u._id === userId ? { ...u, lastSeen } : u)))
+    }
+
+    // IMPORTANT: listeners first
     socket.on('privateMessage', receiveMessage)
+    socket.on('onlineUsers', handleOnlineUsers)
+    socket.on('userOnline', handleUserOnline)
+    socket.on('userOffline', handleUserOffline)
+
+    // THEN join
+    socket.emit('joinChat', user._id)
 
     return () => {
       socket.off('privateMessage', receiveMessage)
+      socket.off('onlineUsers', handleOnlineUsers)
+      socket.off('userOnline', handleUserOnline)
+      socket.off('userOffline', handleUserOffline)
     }
   }, [user?._id])
 
@@ -99,7 +142,6 @@ export default function UserList() {
       receiver: selectedId,
       content: message.trim(),
     })
-
 
     getUsersData()
 
@@ -165,7 +207,11 @@ export default function UserList() {
             // console.log(user);
             return (
               <div key={user._id} onClick={() => handleClick(user._id)} className={`flex h-18 cursor-pointer items-center gap-3 px-4 transition ${selectedId === user._id ? 'bg-[#f0f2f5]' : 'hover:bg-[#f5f6f6]'}`}>
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{user.name?.charAt(0).toUpperCase()}</div>
+                <div className="relative">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{user.name?.charAt(0).toUpperCase()}</div>
+
+                  {onlineUsers.includes(user._id) && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-[#00a884]" />}
+                </div>
 
                 <div className="min-w-0 flex-1 border-b border-[#e9edef] py-3 ">
                   <div className="flex items-center justify-between">
@@ -218,7 +264,18 @@ export default function UserList() {
                 <div>
                   <h2 className="truncate text-[17px] font-medium text-[#111b21]">{selectedUser?.name}</h2>
 
-                  <p className="text-xs text-[#00a884]">online</p>
+                  <p className={`text-xs ${onlineUsers.includes(selectedId) ? 'text-[#00a884]' : 'text-[#667781]'}`}>
+                    {onlineUsers.includes(selectedId)
+                      ? 'online'
+                      : selectedUser?.lastSeen
+                        ? `last seen ${new Date(selectedUser.lastSeen).toLocaleString([], {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}`
+                        : 'offline'}
+                  </p>
                 </div>
               </div>
 
