@@ -14,7 +14,7 @@ const { default: mongoose } = require('mongoose')
 // ! signup
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password, number, age } = req.body
+    const { name, email, password, number, age, image } = req.body
 
     // Check required fields
     if (!name || !email || !password || !number || !age) {
@@ -46,6 +46,7 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
       number: number,
       age: age,
+      image:image
     })
 
     return res.status(201).json({
@@ -58,6 +59,7 @@ router.post('/signup', async (req, res) => {
         email: newUser.email,
         number: newUser.number,
         age: newUser.age,
+        image:newUser.image
       },
     })
   } catch (error) {
@@ -200,6 +202,35 @@ router.get('/profile', authMiddleware, async (req, res) => {
   }
 })
 
+// ! userProfile multer logic
+router.get('/:id', async (req, res) => {
+  try {
+    const id = req.params.id
+    const data = await User.findById(id)
+    console.log(id)
+    console.log(data)
+    res.status(200).json(data)
+  } catch (error) {
+    res.status(500).json(error)
+  }
+})
+
+router.put('/:id', async (req, res) => {
+  try {
+    const id = req.params.id
+    const productObj = req.body
+    const data = await User.findByIdAndUpdate(id, productObj)
+    res.status(200).json(data)
+  } catch (error) {
+    res.status(500).json(error)
+  }
+})
+
+
+
+
+
+
 // ! check API
 router.get('/all', async (req, res) => {
   try {
@@ -225,9 +256,7 @@ router.get('/all', async (req, res) => {
 // ! aavel msg top pr lava mate
 router.get('/', authMiddleware, async (req, res) => {
   try {
-
-
-    console.log("middleware", typeof(req.user.userId));
+    console.log('middleware', typeof req.user.userId)
     const currentUserId = new mongoose.Types.ObjectId(req.user.userId)
 
     const users = await User.aggregate([
