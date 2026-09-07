@@ -12,7 +12,6 @@ var usersRouter = require('./routes/users')
 var messageRouter = require('./routes/message')
 var uploadsRouter = require('./routes/upload')
 
-
 const Message = require('./model/message')
 
 dotenv.config()
@@ -44,11 +43,14 @@ app.use('/users', usersRouter)
 app.use('/message', messageRouter)
 app.use('/uploads', uploadsRouter)
 
-
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch((err) => console.log('MongoDB Error:', err))
+  .then(() => {
+    console.log('MongoDB Connect')
+  })
+  .catch((err) => {
+    console.error('MongoDB Error:', err)
+  })
 
 // ! SOCKET.IO
 const onlineUsers = new Map()
@@ -104,10 +106,7 @@ function setupSocket(io) {
         // 1. SEND MESSAGE TO SENDER
         socket.emit('privateMessage', msg)
 
-        console.log(msg);
-        
-
-      
+        console.log(msg)
 
         // 2. SEND MESSAGE TO RECEIVER
         if (receiverSocketId) {

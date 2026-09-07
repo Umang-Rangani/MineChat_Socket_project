@@ -220,6 +220,8 @@ router.put('/:id', async (req, res) => {
     const id = req.params.id
     const productObj = req.body
     const data = await User.findByIdAndUpdate(id, productObj)
+
+    console.log("data", data);
     res.status(200).json(data)
   } catch (error) {
     res.status(500).json(error)

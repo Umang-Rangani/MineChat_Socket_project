@@ -45,6 +45,9 @@ export const UserProvider = ({ children }) => {
     }
   }
 
+
+  console.log("userProvider",user);
+
   return (
     <UserContext.Provider
       value={{

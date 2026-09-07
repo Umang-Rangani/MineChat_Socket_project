@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { axiosInstance } from '../config/axiosConfig'
-import { User, Phone, Calendar, Mail, Lock, Eye, ArrowLeft, UserPlus } from 'lucide-react'
+import { User, Phone, Calendar, Mail, Lock, Eye, ArrowLeft, UserPlus, Image } from 'lucide-react'
+import { uploadFile } from '../utils/uploadFile'
+import { useRef } from 'react'
 
 export default function SignUp() {
   const [signUp, setSignUp] = useState({
@@ -10,6 +12,7 @@ export default function SignUp() {
     password: '',
     number: '',
     age: '',
+    image: '',
   })
 
   const [loading, setLoading] = useState(false)
@@ -17,6 +20,12 @@ export default function SignUp() {
   const [success, setSuccess] = useState('')
 
   const navigate = useNavigate()
+
+  // ! file input empty mate
+  const fileInputRef = useRef(null)
+
+  // !image 1
+  const [pimage, setPimage] = useState()
 
   // ================= CHANGE =================
   const changeHandle = (e) => {
@@ -31,6 +40,13 @@ export default function SignUp() {
     setSuccess('')
   }
 
+  // !image 2
+  const handleImage = (e) => {
+    setPimage(e.target.files[0])
+
+    console.log('e.target.files[0]', e.target.files[0])
+  }
+
   // ================= SUBMIT =================
   const submitHandle = async (e) => {
     e.preventDefault()
@@ -40,9 +56,19 @@ export default function SignUp() {
       setError('')
       setSuccess('')
 
-      const res = await axiosInstance.post('/users/signup', signUp)
+      // !image 3
+      if (!pimage) {
+        throw new Error('Please select a signUp image')
+      }
+      const filePath = await uploadFile(signUp.name, pimage, 'signUp')
 
-      console.log('Signup Response:', res.data)
+      const productData = { ...signUp, image: filePath }
+
+      const res = await axiosInstance.post('/users/signup', productData)
+
+      // const res = await axiosInstance.post('/users/signup', signUp)
+
+      // console.log('Signup Response:', res.data)
 
       if (res.data.success) {
         setSuccess('Account created successfully!')
@@ -53,7 +79,16 @@ export default function SignUp() {
           password: '',
           number: '',
           age: '',
+          image: '',
         })
+
+        // Clear selected file
+        setPimage(null)
+
+        // Clear file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
 
         setTimeout(() => {
           navigate('/login')
@@ -110,6 +145,24 @@ export default function SignUp() {
                 name="name"
                 placeholder="Enter your name"
                 required
+                className="w-full rounded-lg border border-[#2a3942] bg-[#202c33] py-3 pl-11 pr-4 text-white outline-none transition placeholder:text-gray-500 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366]"
+              />
+            </div>
+          </div>
+
+          {/* ================= Image ================= */}
+          <div className="mb-5">
+            <label className="mb-2 block text-sm font-medium text-gray-300">Avtar</label>
+
+            <div className="relative">
+              <Image size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleImage}
                 className="w-full rounded-lg border border-[#2a3942] bg-[#202c33] py-3 pl-11 pr-4 text-white outline-none transition placeholder:text-gray-500 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366]"
               />
             </div>

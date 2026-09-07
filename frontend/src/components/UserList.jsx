@@ -5,7 +5,7 @@ import { useUser } from '../context/userProvider'
 import { io } from 'socket.io-client'
 
 // ! socket
-const socket = io('http://192.168.1.6:3000', {
+const socket = io('http://localhost:3000', {
   withCredentials: true,
 })
 
@@ -41,10 +41,8 @@ export default function UserList() {
   const filteredUsers = usersData.filter((user) => user.name.toLowerCase().includes(search.toLowerCase()))
   // console.log('filteredUsers', filteredUsers)
 
-  // console.log('user', user)
 
   // ! chating Logic
-  // SOCKET CONNECT + JOIN
   // ! SOCKET CONNECT + JOIN
   useEffect(() => {
     if (!user?._id) return
@@ -65,7 +63,7 @@ export default function UserList() {
 
     // ALL ONLINE USERS
     const handleOnlineUsers = ({ users }) => {
-      console.log('Online users:', users)
+      // console.log('Online users:', users)
       setOnlineUsers(users)
     }
 
@@ -201,14 +199,20 @@ export default function UserList() {
 
         {/* USERS SCROLL */}
 
-        <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto">
+        <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto pb-10">
           {filteredUsers.map((user) => {
             // console.log(user._id === selectedId ? "black" : "green");
-            // console.log(user);
+            // console.log(user)
             return (
               <div key={user._id} onClick={() => handleClick(user._id)} className={`flex h-18 cursor-pointer items-center gap-3 px-4 transition ${selectedId === user._id ? 'bg-[#f0f2f5]' : 'hover:bg-[#f5f6f6]'}`}>
                 <div className="relative">
-                  <div className="flex size-12 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{user.name?.charAt(0).toUpperCase()}</div>
+                  {!user.image ? (
+                    <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{user.name?.charAt(0).toUpperCase()}</div>
+                  ) : (
+                    <div className="size-12 shrink-0 overflow-hidden rounded-full bg-[#dfe5e7]">
+                      <img src={`http://localhost:3000${user.image}`} alt={user.name} className="h-full w-full object-cover transition duration-300 hover:scale-105" />
+                    </div>
+                  )}
 
                   {onlineUsers.includes(user._id) && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-[#00a884]" />}
                 </div>
@@ -239,7 +243,7 @@ export default function UserList() {
 
       {/* RIGHT - CHAT */}
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2]">
+      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2] pb-10">
         {!selectedId ? (
           /* ================= EMPTY CHAT ================= */
 

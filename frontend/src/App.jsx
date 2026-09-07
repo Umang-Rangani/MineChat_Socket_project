@@ -5,6 +5,8 @@ import SignUp from './pages/SignUp'
 import ProtectedRoute from './ProtectedRoute'
 import UserList from './components/UserList'
 import Login from './pages/LogIn'
+import UserProfile from './components/UserProfile'
+import UserProfileChange from './components/UserProfileChange'
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<UserList />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/profile/update" element={<UserProfileChange />} />
             </Route>
           </Route>
 
