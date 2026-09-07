@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+      // ! 1
+    image: {
+      type: String,
+    },
+
     number: {
       type: Number,
       required: true,
