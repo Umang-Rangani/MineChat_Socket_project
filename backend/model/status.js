@@ -12,7 +12,7 @@ const statusSchema = new mongoose.Schema(
       type: String,
       enum: ['text', 'image', 'video'],
       default: 'text',
-    },
+    },    
 
     content: {
       type: String,

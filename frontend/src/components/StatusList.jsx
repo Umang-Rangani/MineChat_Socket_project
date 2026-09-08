@@ -1,35 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { axiosInstance } from '../config/axiosConfig'
 import { useUser } from '../context/userProvider'
-import { Plus, Image, Video, Type, ArrowLeft, X, Send } from 'lucide-react'
+import { Plus, Image, Video, Type, ArrowLeft, X, Send, ArrowRight } from 'lucide-react'
 import { uploadFile } from '../utils/uploadFile'
 
 export default function StatusList() {
   const { user } = useUser()
 
-  // USERS
+  // ! users data contact GET => users
   const [usersData, setUsersData] = useState([])
 
-  // MAIN VIEW
-  // home | create
-  const [statusView, setStatusView] = useState('home')
+  // ! status data jova mate GET => status
+  const [statusDataList, setStatusDataList] = useState([])
 
-  // CREATE TYPE
-  // null | text | media
-  const [statusType, setStatusType] = useState(null)
+  // ! actual Status Viewer
+  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const [currentStatusIndex, setCurrentStatusIndex] = useState(0)
 
-  // STATUS DATA
+  // + pr click krta create content open thay
+  const [statusView, setStatusView] = useState('home') // home | create
+
+  // model key mate type:text / media
+  const [statusType, setStatusType] = useState(null) // null | text | media
+
+  // status input data
   const [statusData, setStatusData] = useState({
     content: '',
     description: '',
   })
 
-  // FILE
+  // upload file mate
   const fileInputRef = useRef(null)
   const [pimage, setPimage] = useState(null)
+
+  // img ne select krta create ma btava mte
   const [preview, setPreview] = useState(null)
 
-  // GET USERS
+  // ! get users
   const getUsersData = async () => {
     try {
       const res = await axiosInstance.get('/users')
@@ -39,11 +46,29 @@ export default function StatusList() {
     }
   }
 
+  // ! get status
+  const getStatusData = async () => {
+    try {
+      const res = await axiosInstance.get('/status')
+
+      // console.log('Status Data:', res.data)
+
+      setStatusDataList(res.data)
+    } catch (error) {
+      console.log('Status Error:', error)
+    }
+  }
+
   useEffect(() => {
     getUsersData()
+    getStatusData()
   }, [])
 
-  // OPEN CREATE STATUS
+  const getUserStatus = (userId) => {
+    return statusDataList.filter((status) => status.userId?._id === userId)
+  }
+
+  // ! open create status
   const handleOpenCreate = () => {
     setStatusView('create')
     setStatusType(null)
@@ -56,7 +81,7 @@ export default function StatusList() {
     })
   }
 
-  // CLOSE CREATE STATUS
+  // ! close create status
   const handleCloseCreate = () => {
     setStatusView('home')
     setStatusType(null)
@@ -69,12 +94,12 @@ export default function StatusList() {
     })
   }
 
-  // TEXT STATUS
+  // ! text status
   const handleTextStatus = () => {
     setStatusType('text')
   }
 
-  // MEDIA STATUS
+  // ! media status
   const handleMediaStatus = () => {
     setStatusType('media')
 
@@ -83,7 +108,7 @@ export default function StatusList() {
     }, 0)
   }
 
-  // FILE SELECT
+  // ! file input mate
   const handleImage = (e) => {
     const file = e.target.files?.[0]
 
@@ -91,11 +116,15 @@ export default function StatusList() {
 
     setPimage(file)
 
+    // purpose  preview img btava mte
     const imageUrl = URL.createObjectURL(file)
     setPreview(imageUrl)
+
+    console.log('imageUrl', imageUrl)
+    console.log('file', file)
   }
 
-  // TEXT INPUT
+  // ! text input mate
   const handleChange = (e) => {
     const { name, value } = e.target
 
@@ -105,14 +134,11 @@ export default function StatusList() {
     }))
   }
 
-  // PUBLISH STATUS
+  // ! main logic post
   const handlePublish = async () => {
-    console.log('statusType:', statusType)
-
+    // console.log('statusType:', statusType)
     try {
-      // =========================
       // TEXT STATUS
-      // =========================
       if (statusType === 'text') {
         if (!statusData.content.trim()) {
           alert('Please write something')
@@ -135,42 +161,27 @@ export default function StatusList() {
         return
       }
 
-      // =========================
       // IMAGE / VIDEO STATUS
-      // =========================
       if (statusType === 'media') {
         if (!pimage) {
           alert('Please select an image or video')
           return
         }
 
-        // Detect image or video
         const type = pimage.type.startsWith('video/') ? 'video' : 'image'
 
-        // =========================
-        // UPLOAD FILE FIRST
-        // =========================
         const filePath = await uploadFile(pimage.name, pimage, 'status')
 
-        console.log('Uploaded file path:', filePath)
-
-        // =========================
-        // STATUS DATA
-        // =========================
         const data = {
           type,
           content: filePath,
           description: statusData.description,
         }
 
-        console.log('Media status data:', data)
-
-        // =========================
-        // CREATE STATUS
-        // =========================
         const res = await axiosInstance.post('/status', data)
+        // console.log('Media Status Created:', res.data)
 
-        console.log('Media Status Created:', res.data)
+        await getStatusData() //
 
         handleCloseCreate()
       }
@@ -179,13 +190,14 @@ export default function StatusList() {
     }
   }
 
-  return (
-    <div className="flex h-screen w-full bg-white">
-      {/* ================================================= */}
-      {/* LEFT SIDEBAR */}
-      {/* ================================================= */}
+  // console.log(statusView);
+  console.log("xxxxxx", selectedStatuses[currentStatusIndex]);
 
-      <div className="flex w-[405px] flex-col border-r border-gray-200">
+  return (
+    <div className="flex h-screen w-full bg-[#F5F5F0]">
+      {/* LEFT SIDEBAR */}
+
+      <div className="flex w-90 flex-col border-r border-gray-200">
         {/* HEADER */}
         <div className="flex h-20 items-center justify-between px-7">
           <h1 className="text-[26px] font-medium">Status</h1>
@@ -220,38 +232,61 @@ export default function StatusList() {
 
         {/* USERS */}
         <div className="flex-1 overflow-y-auto">
-          {usersData.map((item) => (
-            <div key={item._id} className="flex cursor-pointer items-center gap-4 px-7 py-3 transition hover:bg-gray-50">
-              <div className="h-14 w-14 rounded-full border-2 border-green-500 p-0.5">
-                {!item.image ? (
-                  <div className="flex size-12 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{item.name?.charAt(0).toUpperCase()}</div>
-                ) : (
-                  <div className="size-12 overflow-hidden rounded-full bg-[#dfe5e7]">
-                    <img src={`http://localhost:3000${item.image}`} alt={item.name} className="h-full w-full object-cover" />
-                  </div>
-                )}
-              </div>
+          {usersData.map((item) => {
+            const userStatuses = getUserStatus(item._id)
 
-              <div>
-                <p className="text-[17px] font-medium">{item.name}</p>
+            return (
+              <div
+                key={item._id}
+                onClick={() => {
+                  if (userStatuses.length > 0) {
+                    // console.log('User Status:', userStatuses)
+                  }
+                }}
+                className="flex cursor-pointer items-center gap-4 px-7 py-3 transition hover:bg-gray-50"
+              >
+                <div
+                  onClick={() => {
+                    if (userStatuses.length > 0) {
+                      setSelectedStatuses(userStatuses)
+                      setCurrentStatusIndex(0)
+                    }
+                  }}
+                  className={`h-14 w-14 rounded-full p-0.5 ${userStatuses.length > 0 ? 'border-2 border-green-500' : ''}`}
+                >
+                  {!item.image ? (
+                    <div className="flex size-12 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{item.name?.charAt(0).toUpperCase()}</div>
+                  ) : (
+                    <div className="size-12 overflow-hidden rounded-full bg-[#dfe5e7]">
+                      <img src={`http://localhost:3000${item.image}`} alt={item.name} className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                </div>
 
-                <p className="text-[16px] text-gray-500">Today at 10:02 am</p>
+                <div>
+                  <p className="text-[17px] font-medium">{item.name}</p>
+
+                  <p className="text-[16px] text-gray-500">
+                    {userStatuses.length > 0
+                      ? `Today at ${new Date(userStatuses[userStatuses.length - 1].createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}`
+                      : 'No status'}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
-      {/* ================================================= */}
       {/* MAIN AREA */}
-      {/* ================================================= */}
 
       <div className="flex flex-1 bg-[#f8f7f6]">
-        {/* ================================================= */}
         {/* HOME VIEW */}
-        {/* ================================================= */}
 
-        {statusView === 'home' && (
+        {!selectedStatuses.length > 0 && statusView === 'home' && (
           <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
               <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full border-[7px] border-gray-300">
@@ -265,11 +300,8 @@ export default function StatusList() {
           </div>
         )}
 
-        {/* ================================================= */}
-        {/* CREATE VIEW */}
-        {/* ================================================= */}
-
-        {statusView === 'create' && (
+        {/* create image & text input jova mate */}
+        {!selectedStatuses.length > 0 &&  statusView === 'create' && (
           <div className="flex flex-1 flex-col">
             {/* CREATE HEADER */}
             <div className="flex h-20 items-center justify-between border-b border-gray-200 bg-white px-8">
@@ -288,9 +320,7 @@ export default function StatusList() {
 
             {/* CREATE BODY */}
             <div className="flex flex-1 items-center justify-center overflow-y-auto p-10">
-              {/* ================================================= */}
               {/* SELECT TYPE */}
-              {/* ================================================= */}
 
               {!statusType && (
                 <div className="w-full max-w-3xl">
@@ -298,7 +328,7 @@ export default function StatusList() {
 
                   <div className="grid grid-cols-2 gap-8">
                     {/* PHOTO / VIDEO BOX */}
-                    <button onClick={handleMediaStatus} className="group flex min-h-[260px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
+                    <button onClick={handleMediaStatus} className="group flex min-h-65 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
                       <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 transition group-hover:bg-[#d9fdd3]">
                         <Image size={38} className="text-gray-600 group-hover:text-[#00a884]" />
                       </div>
@@ -309,7 +339,7 @@ export default function StatusList() {
                     </button>
 
                     {/* TEXT BOX */}
-                    <button onClick={handleTextStatus} className="group flex min-h-[260px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
+                    <button onClick={handleTextStatus} className="group flex min-h-65 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
                       <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 transition group-hover:bg-[#d9fdd3]">
                         <Type size={38} className="text-gray-600 group-hover:text-[#00a884]" />
                       </div>
@@ -322,9 +352,7 @@ export default function StatusList() {
                 </div>
               )}
 
-              {/* ================================================= */}
               {/* TEXT FORM */}
-              {/* ================================================= */}
 
               {statusType === 'text' && (
                 <div className="w-full max-w-2xl">
@@ -362,9 +390,7 @@ export default function StatusList() {
                 </div>
               )}
 
-              {/* ================================================= */}
               {/* MEDIA FORM */}
-              {/* ================================================= */}
 
               {statusType === 'media' && (
                 <div className="w-full max-w-2xl">
@@ -390,7 +416,7 @@ export default function StatusList() {
                     {/* PREVIEW */}
                     {preview ? (
                       <div className="relative overflow-hidden rounded-xl bg-black">
-                        {pimage?.type?.startsWith('video/') ? <video src={preview} controls className="max-h-[400px] w-full object-contain" /> : <img src={preview} alt="preview" className="max-h-[400px] w-full object-contain" />}
+                        {pimage?.type?.startsWith('video/') ? <video src={preview} controls className="max-h-100 w-full object-contain" /> : <img src={preview} alt="preview" className="max-h-100 w-full object-contain" />}
 
                         <button
                           onClick={() => {
@@ -433,6 +459,106 @@ export default function StatusList() {
             </div>
           </div>
         )}
+
+        {/* status jova mate */}
+        {selectedStatuses.length > 0 && (
+          <div className="flex flex-1 items-center justify-center bg-[#111B21]">
+            <div className="relative flex h-full w-full max-w-4xl flex-col">
+              {/* top name & time */}
+              <div className="absolute left-0 right-0 top-0 z-10 bg-[#111B21] p-5 text-white">
+                <div className="mb-3 h-1 w-full overflow-hidden rounded bg-gray-500">
+                  <div
+                    className="h-full bg-white transition-all"
+                    style={{
+                      width: `${((currentStatusIndex + 1) / selectedStatuses.length) * 100}%`,
+                    }}
+                  />
+                  
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedStatuses[currentStatusIndex]?.userId?.name}</p>
+
+                    <p className="text-sm text-gray-300">
+                      {new Date(selectedStatuses[currentStatusIndex]?.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedStatuses([])
+                      setCurrentStatusIndex(0)
+                    }}
+                    className="rounded-full p-2 hover:bg-white/20"
+                  >
+                    <X size={25} />
+                  </button>
+                </div>
+              </div>
+
+              {/* status mate nu content */}
+              <div className="flex flex-1 items-center justify-center">
+
+
+                {selectedStatuses[currentStatusIndex]?.type === 'text' ? (
+                  <div
+                    className="flex h-full w-full items-center justify-center px-10 text-center text-white"
+                    style={{
+                      backgroundColor: selectedStatuses[currentStatusIndex]?.backgroundColor || '#000000',
+                    }}
+                  >
+                    <div>
+                      <p className="text-4xl font-medium">{selectedStatuses[currentStatusIndex]?.content}</p>
+
+                      {selectedStatuses[currentStatusIndex]?.description && <p className="mt-5 text-lg text-gray-300">{selectedStatuses[currentStatusIndex].description}</p>}
+                    </div>
+                  </div>
+                ) : selectedStatuses[currentStatusIndex]?.type === 'image' ? (
+                  <div className="relative flex h-140 w-120 items-center justify-center bg-[#111B21]">
+                    <img src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} alt="status" className="max-h-full max-w-full object-contain" />
+
+                    {selectedStatuses[currentStatusIndex]?.description && <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-5 py-3 text-center text-white">{selectedStatuses[currentStatusIndex].description}</div>}
+                  </div>
+                ) : selectedStatuses[currentStatusIndex]?.type === 'video' ? (
+                  <div className="relative flex h-full w-full items-center justify-center bg-black">
+                    <video src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} controls autoPlay className="max-h-full max-w-full object-contain" />
+
+                    {selectedStatuses[currentStatusIndex]?.description && <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-5 py-3 text-center text-white">{selectedStatuses[currentStatusIndex].description}</div>}
+                  </div>
+                ) : null}
+
+
+{/*  */}
+
+
+                
+              </div>
+
+              {/* PREVIOUS BUTTON */}
+              {currentStatusIndex > 0 && (
+                <button onClick={() => setCurrentStatusIndex((prev) => prev - 1)} className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-4 text-white hover:bg-black/70">
+                  <ArrowLeft size={25} />
+                </button>
+              )}
+
+              {/* NEXT BUTTON */}
+              {currentStatusIndex < selectedStatuses.length - 1 && (
+                <button onClick={() => setCurrentStatusIndex((prev) => prev + 1)} className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-4 text-white hover:bg-black/70">
+                  <ArrowRight size={25} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+
+
+
       </div>
     </div>
   )
