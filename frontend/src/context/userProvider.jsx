@@ -29,7 +29,7 @@ export const UserProvider = ({ children }) => {
 
   // CHECK LOGIN ON REFRESH
   useEffect(() => {
-    console.log('AUTH CONTEXT LOADED')
+    // console.log('AUTH CONTEXT LOADED')
 
     getCurrentUser()
   }, [])
@@ -46,7 +46,7 @@ export const UserProvider = ({ children }) => {
   }
 
 
-  console.log("userProvider",user);
+  // console.log("userProvider",user);
 
   return (
     <UserContext.Provider

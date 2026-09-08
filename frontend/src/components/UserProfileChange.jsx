@@ -33,11 +33,6 @@ export default function UserProfileChange() {
     e.preventDefault()
 
     try {
-      // ! rit1 only uploadfile
-      // if (!pimage) { throw new Error("Please select a product image"); }
-      // const filePath = await uploadFile(form.categoryName, pimage, "foodCategory");
-      // const foodData = { ...form, categoryIMG: filePath, };
-
       // ! rit2 uploadFile &  deleteFile
       let imagePath = product.image
 
@@ -52,13 +47,14 @@ export default function UserProfileChange() {
       }
       const productData = { ...product, image: imagePath }
 
-      console.log("productData", productData);
+      // console.log('productData', productData)
 
       const res = await axiosInstance.put(`/users/${id}`, productData)
-      
+
       setUser(res.data)
 
-      console.log( "change",res.data)
+      // console.log('user', user)
+      // console.log('change', res.data)
 
       // navigate('/')
     } catch (error) {
@@ -78,9 +74,10 @@ export default function UserProfileChange() {
 
   useEffect(() => {
     getProduct()
-  }, [id])
+  }, [id, user])
 
-  // console.log("product", product)
+  console.log("product", product)
+  // console.log("pimage", pimage);
 
   return (
     <div className="min-h-screen w-full overflow-y-auto bg-[#f7f8fa]">
@@ -132,7 +129,13 @@ export default function UserProfileChange() {
                   <div className="flex size-24 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-3xl font-semibold text-[#54656f]">{product.name?.charAt(0).toUpperCase()}</div>
                 )}
 
-                {!product.image && <input type="file" name="image" accept="image/*" onChange={handleImage} className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#318616]" />}
+                {!product.image && 
+                <input 
+                type="file" 
+                name="image" 
+                accept="image/*" 
+                onChange={handleImage} 
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#318616]" />}
               </div>
             </div>
 

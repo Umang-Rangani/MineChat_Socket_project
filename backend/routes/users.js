@@ -46,7 +46,7 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
       number: number,
       age: age,
-      image:image
+      image: image,
     })
 
     return res.status(201).json({
@@ -59,7 +59,7 @@ router.post('/signup', async (req, res) => {
         email: newUser.email,
         number: newUser.number,
         age: newUser.age,
-        image:newUser.image
+        image: newUser.image,
       },
     })
   } catch (error) {
@@ -216,22 +216,18 @@ router.get('/:id', async (req, res) => {
 })
 
 router.put('/:id', async (req, res) => {
+  // { new: true } → updated document return karse.
   try {
     const id = req.params.id
     const productObj = req.body
-    const data = await User.findByIdAndUpdate(id, productObj)
+    const data = await User.findByIdAndUpdate(id, productObj, { new: true })
 
-    console.log("data", data);
+    console.log('data', data)
     res.status(200).json(data)
   } catch (error) {
     res.status(500).json(error)
   }
 })
-
-
-
-
-
 
 // ! check API
 router.get('/all', async (req, res) => {

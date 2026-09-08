@@ -7,6 +7,7 @@ import UserList from './components/UserList'
 import Login from './pages/LogIn'
 import UserProfile from './components/UserProfile'
 import UserProfileChange from './components/UserProfileChange'
+import StatusList from './components/StatusList'
 
 export default function App() {
   return (
@@ -27,6 +28,8 @@ export default function App() {
               <Route path="/" element={<UserList />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/profile/update" element={<UserProfileChange />} />
+
+              <Route path="/status" element={<StatusList />} />
             </Route>
           </Route>
 

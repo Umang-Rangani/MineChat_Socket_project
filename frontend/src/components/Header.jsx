@@ -1,7 +1,7 @@
 import React from 'react'
 import { CircleDashed, LogOut, MessageCircle, MoreVertical, Settings } from 'lucide-react'
 import { useUser } from '../context/userProvider'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Header() {
   const { logout, user } = useUser()
@@ -11,7 +11,7 @@ export default function Header() {
     navigate('/profile')
   }
 
-  console.log("HeaderUser",user) 
+  // console.log("HeaderUser",user) 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#2a3942] bg-[#202c33] px-5">
       {/* ================= LOGO ================= */}
@@ -29,7 +29,7 @@ export default function Header() {
       <div className="flex items-center gap-1">
         {/* Chats */}
 
-        <button type="button" className="flex items-center gap-2 rounded-lg px-4 py-2 text-[#e9edef] transition hover:bg-[#2a3942]">
+        <button onClick={() => navigate("/")} type="button" className="flex items-center gap-2 rounded-lg px-4 py-2 text-[#e9edef] transition hover:bg-[#2a3942]">
           <MessageCircle size={20} />
 
           <span className="text-sm font-medium">Chats</span>
@@ -37,11 +37,11 @@ export default function Header() {
 
         {/* Status */}
 
-        <button type="button" className="flex items-center gap-2 rounded-lg px-4 py-2 text-[#aebac1] transition hover:bg-[#2a3942] hover:text-white">
+        <Link to={"/status"} type="button" className="flex items-center gap-2 rounded-lg px-4 py-2 text-[#aebac1] transition hover:bg-[#2a3942] hover:text-white">
           <CircleDashed size={20} />
 
           <span className="text-sm font-medium">Status</span>
-        </button>
+        </Link>
 
         {/* Settings */}
 

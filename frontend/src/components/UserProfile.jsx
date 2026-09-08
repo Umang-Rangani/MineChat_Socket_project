@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useUser } from '../context/userProvider'
 import { axiosInstance } from '../config/axiosConfig'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function UserProfile() {
   const { user } = useUser()
@@ -81,7 +81,7 @@ export default function UserProfile() {
         <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-10">
           <div className="mx-auto grid w-full  grid-cols-1 gap-4 py-5 sm:grid-cols-2 lg:grid-cols-3">
             {usersData.map((contact) => (
-              <div key={contact._id} className="group flex min-w-0 cursor-pointer items-center gap-4 rounded-xl border border-[#e9edef] bg-white px-4 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <Link to={`/?userId=${contact._id}`} key={contact._id} className="group flex min-w-0 cursor-pointer items-center gap-4 rounded-xl border border-[#e9edef] bg-white px-4 py-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 {/* Contact Image */}
                 {!contact.image ? (
                   <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-xl font-semibold text-[#54656f]">{contact.name?.charAt(0).toUpperCase()}</div>
@@ -100,7 +100,7 @@ export default function UserProfile() {
                   <p className="truncate text-sm text-[#667781]">📱 {contact.number}</p>
                 </div>
 
-              </div>
+              </Link>
             ))}
           </div>
         </div>

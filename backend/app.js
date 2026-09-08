@@ -10,6 +10,7 @@ var dotenv = require('dotenv')
 var indexRouter = require('./routes/index')
 var usersRouter = require('./routes/users')
 var messageRouter = require('./routes/message')
+var statusRouter = require('./routes/status')
 var uploadsRouter = require('./routes/upload')
 
 const Message = require('./model/message')
@@ -41,6 +42,7 @@ app.use(
 app.use('/', indexRouter)
 app.use('/users', usersRouter)
 app.use('/message', messageRouter)
+app.use('/status', statusRouter)
 app.use('/uploads', uploadsRouter)
 
 mongoose
