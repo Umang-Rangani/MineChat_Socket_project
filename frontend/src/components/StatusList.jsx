@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { axiosInstance } from '../config/axiosConfig'
 import { useUser } from '../context/userProvider'
-import { Plus, Image, Video, Type, ArrowLeft, X, Send, ArrowRight } from 'lucide-react'
-import { uploadFile } from '../utils/uploadFile'
+import { Plus, Image, Video, Type, ArrowLeft, X, Send, ArrowRight, Trash2 } from 'lucide-react'
+import { deleteFile, uploadFile } from '../utils/uploadFile'
 
 export default function StatusList() {
   const { user } = useUser()
@@ -51,7 +51,7 @@ export default function StatusList() {
     try {
       const res = await axiosInstance.get('/status')
 
-      // console.log('Status Data:', res.data)
+      console.log('Status Data:', res.data)
 
       setStatusDataList(res.data)
     } catch (error) {
@@ -63,6 +63,10 @@ export default function StatusList() {
     getUsersData()
     getStatusData()
   }, [])
+
+  const getLoginUserStatus = (userId) => {
+    return statusDataList.filter((status) => status.userId?._id === userId)
+  }
 
   const getUserStatus = (userId) => {
     return statusDataList.filter((status) => status.userId?._id === userId)
@@ -161,7 +165,7 @@ export default function StatusList() {
         return
       }
 
-      // IMAGE / VIDEO STATUS
+      // IMAGE / VIDEO <STATUS></STATUS>
       if (statusType === 'media') {
         if (!pimage) {
           alert('Please select an image or video')
@@ -190,8 +194,47 @@ export default function StatusList() {
     }
   }
 
+  // ! status Trash2 krva mte
+  const handleDeleteStatus = async () => {
+    const currentStatus = selectedStatuses[currentStatusIndex]
+
+    if (!currentStatus?._id) return
+
+    try {
+      // 1. Delete status from MongoDB
+      await axiosInstance.delete(`/status/${currentStatus._id}`)
+
+      // 2. Delete uploaded image/video file
+      if (currentStatus.type === 'image' || currentStatus.type === 'video') {
+        await deleteFile(currentStatus.content)
+      }
+
+      // 3. Remove status from main status list
+      setStatusDataList((prev) => prev.filter((status) => status._id !== currentStatus._id))
+
+      // 4. Remove status from currently opened statuses
+      const updatedStatuses = selectedStatuses.filter((status) => status._id !== currentStatus._id)
+
+      // 5. If no status left, close viewer
+      if (updatedStatuses.length === 0) {
+        setSelectedStatuses([])
+        setCurrentStatusIndex(0)
+        return
+      }
+
+      // 6. Otherwise show remaining statuses
+      setSelectedStatuses(updatedStatuses)
+
+      setCurrentStatusIndex((prev) => (prev >= updatedStatuses.length ? updatedStatuses.length - 1 : prev))
+
+      console.log('Status deleted successfully')
+    } catch (error) {
+      console.log('Delete Status Error:', error.response?.data || error.message)
+    }
+  }
+
   // console.log(statusView);
-  console.log("xxxxxx", selectedStatuses[currentStatusIndex]);
+  console.log('xxxxxx', selectedStatuses[currentStatusIndex])
 
   return (
     <div className="flex h-screen w-full bg-[#F5F5F0]">
@@ -208,22 +251,55 @@ export default function StatusList() {
           </button>
         </div>
 
-        {/* MY STATUS */}
-        <div className="flex items-center gap-4 px-7 py-3">
-          <div className="relative">
-            {!user?.image ? (
-              <div className="flex size-14 items-center justify-center rounded-full bg-[#dfe5e7] text-xl font-semibold text-[#54656f]">{user?.name?.charAt(0).toUpperCase()}</div>
-            ) : (
-              <img src={`http://localhost:3000${user.image}`} alt={user.name} className="size-14 rounded-full object-cover" />
-            )}
-          </div>
+        {/* my status jova mate */}
+        {(() => {
+          const myStatuses = getLoginUserStatus(user?._id)
 
-          <div>
-            <p className="text-[17px] font-medium">My status</p>
+          return (
+            <div
+              onClick={() => {
+                if (myStatuses.length > 0) {
+                  setSelectedStatuses(myStatuses)
+                  setCurrentStatusIndex(0)
+                } else {
+                  handleOpenCreate()
+                }
+              }}
+              className="flex cursor-pointer items-center gap-4 px-7 py-3 hover:bg-gray-50"
+            >
+              <div className="relative">
+                {/* Profile */}
+                <div className={`h-14 w-14 rounded-full p-0.5 ${myStatuses.length > 0 ? 'border-2 border-green-500' : ''}`}>
+                  {!user?.image ? (
+                    <div className="flex size-12 items-center justify-center rounded-full bg-[#dfe5e7] text-xl font-semibold text-[#54656f]">{user?.name?.charAt(0).toUpperCase()}</div>
+                  ) : (
+                    <img src={`http://localhost:3000${user.image}`} alt={user.name} className="size-12 rounded-full object-cover" />
+                  )}
+                </div>
 
-            <p className="text-gray-500">Click to add status update</p>
-          </div>
-        </div>
+                {/* Plus */}
+                {myStatuses.length === 0 && (
+                  <div className="absolute bottom-0 right-0 flex size-5 items-center justify-center rounded-full bg-green-600 text-white">
+                    <Plus size={14} />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[17px] font-medium">My status</p>
+
+                <p className="text-[16px] text-gray-500">
+                  {myStatuses.length > 0
+                    ? `Today at ${new Date(myStatuses[myStatuses.length - 1].createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}`
+                    : 'Click to add status update'}
+                </p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* RECENT */}
         <div className="mt-5 px-7">
@@ -301,7 +377,7 @@ export default function StatusList() {
         )}
 
         {/* create image & text input jova mate */}
-        {!selectedStatuses.length > 0 &&  statusView === 'create' && (
+        {!selectedStatuses.length > 0 && statusView === 'create' && (
           <div className="flex flex-1 flex-col">
             {/* CREATE HEADER */}
             <div className="flex h-20 items-center justify-between border-b border-gray-200 bg-white px-8">
@@ -390,10 +466,9 @@ export default function StatusList() {
                 </div>
               )}
 
-              {/* MEDIA FORM */}
-
+              {/* image & video mate nu form */}
               {statusType === 'media' && (
-                <div className="w-full max-w-2xl">
+                <div className="w-full max-w-2xl pb-10">
                   <div className="rounded-2xl bg-white p-8 shadow-sm">
                     <div className="mb-6 flex items-center justify-between">
                       <h3 className="text-2xl font-medium">Create media status</h3>
@@ -456,9 +531,12 @@ export default function StatusList() {
                   </div>
                 </div>
               )}
+
+
             </div>
           </div>
         )}
+
 
         {/* status jova mate */}
         {selectedStatuses.length > 0 && (
@@ -473,7 +551,6 @@ export default function StatusList() {
                       width: `${((currentStatusIndex + 1) / selectedStatuses.length) * 100}%`,
                     }}
                   />
-                  
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -485,26 +562,31 @@ export default function StatusList() {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
-                      
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedStatuses([])
-                      setCurrentStatusIndex(0)
-                    }}
-                    className="rounded-full p-2 hover:bg-white/20"
-                  >
-                    <X size={25} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedStatuses([])
+                        setCurrentStatusIndex(0)
+                      }}
+                      className="rounded-full p-2 hover:bg-white/20"
+                    >
+                      <X size={25} />
+                    </button>
+
+                    {selectedStatuses[currentStatusIndex].userId._id == user?._id && (
+                      <button onClick={handleDeleteStatus} className="rounded-full bg-red-200 p-2 text-red-600 hover:bg-red-300">
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* status mate nu content */}
               <div className="flex flex-1 items-center justify-center">
-
-
                 {selectedStatuses[currentStatusIndex]?.type === 'text' ? (
                   <div
                     className="flex h-full w-full items-center justify-center px-10 text-center text-white"
@@ -526,17 +608,15 @@ export default function StatusList() {
                   </div>
                 ) : selectedStatuses[currentStatusIndex]?.type === 'video' ? (
                   <div className="relative flex h-full w-full items-center justify-center bg-black">
-                    <video src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} controls autoPlay className="max-h-full max-w-full object-contain" />
+                    <video src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} controls={false} autoPlay loop className="max-h-full max-w-full object-contain z-40" />
 
-                    {selectedStatuses[currentStatusIndex]?.description && <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-5 py-3 text-center text-white">{selectedStatuses[currentStatusIndex].description}</div>}
+                    {selectedStatuses[currentStatusIndex]?.description && (
+                      <div className="absolute bottom-23 left-1/2 -translate-x-1/2   px-5 py-3 text-center text-white bg-black/20 w-full z-50">{selectedStatuses[currentStatusIndex].description}</div>
+                    )}
                   </div>
                 ) : null}
 
-
-{/*  */}
-
-
-                
+                {/*  */}
               </div>
 
               {/* PREVIOUS BUTTON */}
@@ -555,7 +635,6 @@ export default function StatusList() {
             </div>
           </div>
         )}
-
 
 
 

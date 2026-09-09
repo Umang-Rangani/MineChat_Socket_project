@@ -239,8 +239,8 @@ router.get('/all', async (req, res) => {
   }
 })
 
-// ! ilter mate maping
-// router.get('/', authMiddleware, async (req, res) => {
+// ! jova mate maping
+// router.get('/all', authMiddleware, async (req, res) => {
 //   try {
 //     const data = await User.find({
 //       _id: { $ne: req.user.userId },
@@ -332,6 +332,7 @@ router.get('/', authMiddleware, async (req, res) => {
     })
   }
 })
+
 
 // ! all users POST in POSTMAN & password ne hash krva mate
 router.post('/', async (req, res) => {

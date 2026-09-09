@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { axiosInstance } from '../config/axiosConfig'
 import { Search, X, Video, Phone, Smile, Paperclip, Mic, Send, CheckCheck, ArrowLeft, MoreVertical } from 'lucide-react'
 import { useUser } from '../context/userProvider'
 import { io } from 'socket.io-client'
 import { useSearchParams } from 'react-router-dom'
+import { uploadFile } from '../utils/uploadFile'
 
 // ! socket
 const socket = io('http://localhost:3000', {
@@ -17,15 +18,18 @@ export default function UserList() {
   const [search, setSearch] = useState('')
 
   const [messages, setMessages] = useState([])
+  const [showEmoji, setShowEmoji] = useState(false)
 
-  // 2nd person
-  // const [chatUserId, setSelectedId] = useState(null)
+  // ! img2.
+  const fileInputRef = useRef(null)
+  const [pimage, setPimage] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [previewType, setPreviewType] = useState(null)
 
   const [message, setMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState([])
 
-
-  // ! hook used list card & profile card pr click krta chat aave 
+  // ! hook used list card & profile card pr click krta chat aave
   const [searchParams, setSearchParams] = useSearchParams()
   const chatUserId = searchParams.get('userId') //click krta 2nd person id
 
@@ -48,7 +52,6 @@ export default function UserList() {
   // console.log('filteredUsers', filteredUsers)
 
   // ! chating Logic
-  // ! SOCKET CONNECT + JOIN
   useEffect(() => {
     if (!user?._id) return
 
@@ -111,7 +114,6 @@ export default function UserList() {
     }
   }, [user?._id])
 
-
   // ! list card & profile card pr click krta chat aave
   useEffect(() => {
     if (!chatUserId || !user?._id) return
@@ -128,44 +130,102 @@ export default function UserList() {
 
     getMessages()
   }, [chatUserId, user?._id])
-  // SELECT USER
+
+  // ! select user
   const handleClick = (userId) => {
     setSearchParams({ userId })
     setMessage('')
   }
 
+  // ! CURRENT CHAT MESSAGES
+  const currentMessages = messages.filter((msg) => {
+    return (msg.sender === user?._id && msg.receiver === chatUserId) || (msg.sender === chatUserId && msg.receiver === user?._id)
+  })
 
+  // ! select krta user ne
+  const selectedUser = usersData.find((user) => user._id === chatUserId)
 
-  // SEND MESSAGE
+  // ! send message
   const sendMessage = async (e) => {
     e.preventDefault()
 
-    // console.log('sending')
-
-    if (!message.trim()) return
     if (!chatUserId) return
     if (!user?._id) return
 
-    // ! privateMessage send => POST
+    // ! img5
+    // IMAGE / VIDEO MESSAGE
+    if (pimage) {
+      try {
+        const uploadedPath = await uploadFile(pimage.name, pimage, 'chat')
+
+        socket.emit('privateMessage', {
+          sender: user._id,
+          receiver: chatUserId,
+          content: uploadedPath,
+          type: previewType,
+        })
+
+        removePreview()
+
+        return
+      } catch (error) {
+        console.log('File Message Error:', error)
+        return
+      }
+    }
+
+    // TEXT MESSAGE
+    if (!message.trim()) return
 
     socket.emit('privateMessage', {
       sender: user._id,
       receiver: chatUserId,
       content: message.trim(),
+      type: 'text',
     })
-
-    getUsersData()
 
     setMessage('')
   }
 
-  // CURRENT CHAT MESSAGES
-  const currentMessages = messages.filter((msg) => {
-    return (msg.sender === user?._id && msg.receiver === chatUserId) || (msg.sender === chatUserId && msg.receiver === user?._id)
-  })
+  // ! img3.
+  //  file input mate
+  const handleImage = (e) => {
+    const file = e.target.files?.[0]
 
-  // SELECTED USER
-  const selectedUser = usersData.find((user) => user._id === chatUserId)
+    if (!file) return
+
+    setPimage(file)
+
+    const fileUrl = URL.createObjectURL(file)
+    setPreview(fileUrl)
+
+    if (file.type.startsWith('image/')) {
+      setPreviewType('image')
+    } else if (file.type.startsWith('video/')) {
+      setPreviewType('video')
+    }
+
+    // Text message clear
+    setMessage('')
+  }
+
+  // ! img4.
+  // File remove function
+  const removePreview = () => {
+    if (preview) {
+      URL.revokeObjectURL(preview)
+    }
+
+    setPimage(null)
+    setPreview(null)
+    setPreviewType(null)
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  console.log('selectedUser', selectedUser)
 
   return (
     <div className="flex h-[calc(100vh-64px)] w-full">
@@ -246,7 +306,7 @@ export default function UserList() {
 
       {/* RIGHT - CHAT */}
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2] pb-10">
+      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2] pb-2">
         {!chatUserId ? (
           /* ================= EMPTY CHAT ================= */
 
@@ -307,16 +367,28 @@ export default function UserList() {
 
                   return (
                     <div key={msg._id || index} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[65%] rounded-lg px-3 py-2 shadow-sm ${isMine ? 'bg-[#d9fdd3]' : 'bg-white'}`}>
-                        <div className="flex items-end gap-2">
-                          <p className="wrap-break-words text-[14px] leading-5 text-[#111b21]">{msg.content}</p>
+                      <div className={`max-w-[65%] rounded-lg shadow-sm ${msg.type === 'text' ? 'px-3 py-2' : 'p-1'} ${isMine ? 'bg-[#d9fdd3]' : 'bg-white'}`}>
+                        <div>
+                          {msg.type === 'image' ? (
+                            <img src={`http://localhost:3000${msg.content}`} alt="sent" className="max-h-80 max-w-sm rounded-lg object-contain" />
+                          ) : msg.type === 'video' ? (
+                            <video src={`http://localhost:3000${msg.content}`} controls className="max-h-80 max-w-sm rounded-lg" />
+                          ) : (
+                            <p className="wrap-break-words px-2 py-1 text-[14px] leading-5 text-[#111b21]">{msg.content}</p>
+                          )}
 
-                          <div className="flex shrink-0 items-center gap-1">
-                            <span className="text-[10px] text-[#667781]">10.30 AM</span>
+                          <div className="flex items-center justify-end gap-1 px-1 pb-1">
+                            <span className="text-[10px] text-[#667781]">
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
 
                             {isMine && <CheckCheck size={15} className="text-[#53bdeb]" />}
                           </div>
                         </div>
+
                       </div>
                     </div>
                   )
@@ -327,17 +399,66 @@ export default function UserList() {
             {/* MESSAGE INPUT FIXED */}
             <div className="shrink-0 bg-[#f0f2f5] px-4 py-3">
               <form onSubmit={sendMessage} className="flex items-center gap-3">
-                <button type="button" className="shrink-0 text-[#54656f] hover:text-[#111b21]">
+                {/* smile button */}
+                <button type="button" onClick={() => setShowEmoji((prev) => !prev)} className="shrink-0 text-[#54656f] hover:text-[#111b21]">
                   <Smile size={25} />
                 </button>
 
-                <button type="button" className="shrink-0 text-[#54656f] hover:text-[#111b21]">
-                  <Paperclip size={22} />
+                {/* smile UI */}
+                {showEmoji && (
+                  <div className="absolute bottom-30 left-40 z-50 h-80 w-80 rounded-lg bg-white p-4 shadow-xl">
+                    <p className="mb-3 font-medium">Emoji</p>
+
+                    <div className="grid grid-cols-8 gap-2 text-2xl">
+                      {['😀', '😂', '😍', '🤣', '😊', '😎', '🥰', '😘', '👍', '❤️', '🔥', '👏', '🎉', '😁', '😢', '😡'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => {
+                            // message input ma emoji add karva mate
+                            setMessage((prev) => prev + emoji)
+                            setShowEmoji(false)
+                          }}
+                          className="rounded p-1 hover:bg-gray-100"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* img1. */}
+                <button onClick={() => fileInputRef.current?.click()} type="button" className="shrink-0 text-[#54656f] hover:text-[#111b21]">
+                  <Paperclip size={25} />
                 </button>
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleImage} className="hidden" />
+                {/* img UI */}
+                {preview && (
+                  <div className="mb-3 rounded-xl bg-white p-3 shadow-sm">
+                    <div className="absolute top-[25%] right-[25%]  ">
+                      {previewType === 'image' ? <img src={preview} alt="preview" className="max-h-100 max-w-150 rounded-lg object-contain" /> : <video src={preview} controls className="max-h-60 max-w-xs rounded-lg" />}
 
-                <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message" className="h-11 flex-1 rounded-lg bg-white px-4 text-sm text-[#111b21] outline-none placeholder:text-[#667781]" />
+                      <button type="button" onClick={removePreview} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                        <X size={18} />
+                      </button>
+                    </div>
 
-                {message.trim() ? (
+                    <p className="mt-2 truncate text-xs text-[#667781]">{pimage?.name}</p>
+                  </div>
+                )}
+
+                {/* text chat */}
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  disabled={!!pimage}
+                  placeholder={pimage ? 'Media selected' : 'Type a message'}
+                  className="h-11 flex-1 rounded-lg bg-white px-4 text-sm text-[#111b21] outline-none placeholder:text-[#667781] disabled:cursor-not-allowed disabled:bg-[#e9edef]"
+                />
+
+                {message.trim() || pimage ? (
                   <button type="submit" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#00a884] text-white transition hover:bg-[#008f72]">
                     <Send size={19} />
                   </button>

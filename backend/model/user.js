@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-      // ! 1
+    // ! 1
     image: {
       type: String,
     },
@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema(
     age: {
       type: Number,
       required: true,
+    },
+
+    lastSeen: {
+      type: Date,
+      default: null,
     },
   },
   {

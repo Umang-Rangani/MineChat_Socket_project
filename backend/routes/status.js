@@ -31,6 +31,24 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 })
 
+router.get('/my-status', authMiddleware, async (req, res) => {
+  try {
+    const data = await Status.find({
+      expiresAt: { $gt: new Date() },
+    })
+      .populate('userId', 'name image')
+      .sort({ createdAt: 1 })
+
+    res.status(200).json(data)
+  } catch (error) {
+    console.log(error)
+
+    res.status(500).json({
+      message: 'Failed to get status',
+    })
+  }
+})
+
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { content, description, type, backgroundColor } = req.body
@@ -56,6 +74,42 @@ router.post('/', authMiddleware, async (req, res) => {
     })
   }
 })
+
+// ! status delete krva mate
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const status = await Status.findById(id)
+
+    if (!status) {
+      return res.status(404).json({
+        message: 'Status not found',
+      })
+    }
+
+    // 🔐 Only status owner can delete
+    if (status.userId.toString() !== req.user.userId.toString()) {
+      return res.status(403).json({
+        message: 'You can delete only your own status',
+      })
+    }
+
+    await Status.findByIdAndDelete(id)
+
+    res.status(200).json({
+      message: 'Status deleted successfully',
+    })
+  } catch (error) {
+    console.log('Delete Status Error:', error)
+
+    res.status(500).json({
+      message: 'Failed to delete status',
+    })
+  }
+})
+
+
 
 router.delete('/', async (req, res) => {
   try {

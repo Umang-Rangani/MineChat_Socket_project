@@ -20,6 +20,12 @@ const messageSchema = new mongoose.Schema(
       trim: true,
     },
 
+    type: {
+      type: String,
+      enum: ['text', 'image', 'video'],
+      default: 'text',
+    },
+
     delivered: {
       type: Boolean,
       default: false,
@@ -28,10 +34,6 @@ const messageSchema = new mongoose.Schema(
     seen: {
       type: Boolean,
       default: false,
-    },
-    lastSeen: {
-      type: Date,
-      default: null,
     },
   },
   {

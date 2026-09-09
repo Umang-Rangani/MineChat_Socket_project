@@ -14,6 +14,7 @@ var statusRouter = require('./routes/status')
 var uploadsRouter = require('./routes/upload')
 
 const Message = require('./model/message')
+const User = require('./model/user')
 
 dotenv.config()
 
@@ -84,47 +85,33 @@ function setupSocket(io) {
     // ! privateMessage send => GET & save database
     socket.on('privateMessage', async (data) => {
       try {
-        const { sender, receiver, content } = data
+        const { sender, receiver, content, type = 'text' } = data
 
         if (!sender || !receiver || !content?.trim()) {
           return
         }
 
-        // Receiver online છે કે નહીં?
         const receiverSocketId = onlineUsers.get(receiver)
-
-        // SAVE MESSAGE IN MONGODB
 
         const msg = await Message.create({
           sender,
           receiver,
           content: content.trim(),
-          // messageType: 'text',
+          type,
           delivered: !!receiverSocketId,
           seen: false,
         })
 
-        // ! પછી sender અને receiver બંનેને message મળે:
-        // 1. SEND MESSAGE TO SENDER
         socket.emit('privateMessage', msg)
 
-        console.log(msg)
-
-        // 2. SEND MESSAGE TO RECEIVER
         if (receiverSocketId) {
           io.to(receiverSocketId).emit('privateMessage', msg)
         }
       } catch (error) {
-        console.error('Message Error:', error)
-
-        socket.emit('messageError', {
-          message: 'Failed to send message',
-        })
+        console.log('Private Message Error:', error)
       }
     })
-
-    // DISCONNECT
-
+    // ! DISCONNECT
     socket.on('disconnect', async () => {
       if (!socket.userId) return
 
@@ -132,15 +119,19 @@ function setupSocket(io) {
 
       const lastSeen = new Date()
 
-      await Message.findByIdAndUpdate(socket.userId, {
+      // Update User's lastSeen
+      await User.findByIdAndUpdate(socket.userId, {
         lastSeen,
       })
 
+      // Tell other users
       socket.broadcast.emit('userOffline', {
         userId: socket.userId,
         lastSeen,
       })
 
+      console.log('User offline:', socket.userId)
+      console.log('Last seen:', lastSeen)
       console.log('Online users:', Array.from(onlineUsers.keys()))
     })
   })
