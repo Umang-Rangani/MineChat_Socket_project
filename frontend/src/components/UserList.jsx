@@ -5,6 +5,7 @@ import { useUser } from '../context/userProvider'
 import { io } from 'socket.io-client'
 import { useSearchParams } from 'react-router-dom'
 import { uploadFile } from '../utils/uploadFile'
+import UserListShimmer from './UserListShimmer'
 
 // ! socket
 const socket = io('http://localhost:3000', {
@@ -33,11 +34,19 @@ export default function UserList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const chatUserId = searchParams.get('userId') //click krta 2nd person id
 
+  // ! shimmmer
+  const [shimmer, setShimmer] = useState(false)
+
+  // ! scroll1.
+  const chatEndRef = useRef(null)
+
   // ! users Logic
   const getUsersData = async () => {
     try {
+      setShimmer(true)
       const res = await axiosInstance.get('/users')
       setUsersData(res.data)
+      setShimmer(false)
     } catch (error) {
       console.log(error)
     }
@@ -57,7 +66,7 @@ export default function UserList() {
 
     // RECEIVE MESSAGE
     const receiveMessage = (data) => {
-      console.log('Message received:', data)
+      // console.log('Message received:', data)
 
       setMessages((prev) => {
         // duplicate message avoid
@@ -77,7 +86,7 @@ export default function UserList() {
 
     // USER ONLINE
     const handleUserOnline = ({ userId }) => {
-      console.log('User online:', userId)
+      // console.log('User online:', userId)
 
       setOnlineUsers((prev) => {
         if (prev.includes(userId)) {
@@ -90,7 +99,7 @@ export default function UserList() {
 
     // USER OFFLINE
     const handleUserOffline = ({ userId, lastSeen }) => {
-      console.log('User offline:', userId, lastSeen)
+      // console.log('User offline:', userId, lastSeen)
 
       setOnlineUsers((prev) => prev.filter((id) => id !== userId))
 
@@ -115,6 +124,7 @@ export default function UserList() {
   }, [user?._id])
 
   // ! list card & profile card pr click krta chat aave
+  // ! list card & profile card pr click krta chat aave
   useEffect(() => {
     if (!chatUserId || !user?._id) return
 
@@ -122,7 +132,16 @@ export default function UserList() {
       try {
         const res = await axiosInstance.get(`/message/${user._id}/${chatUserId}`)
 
-        setMessages(res.data)
+        setMessages((prev) => {
+          // API + Socket messages merge
+          const allMessages = [...res.data, ...prev]
+
+          // duplicate message remove
+          const uniqueMessages = Array.from(new Map(allMessages.map((msg) => [msg._id, msg])).values())
+
+          // createdAt પ્રમાણે sort
+          return uniqueMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        })
       } catch (error) {
         console.log('Get Messages Error:', error)
       }
@@ -141,6 +160,13 @@ export default function UserList() {
   const currentMessages = messages.filter((msg) => {
     return (msg.sender === user?._id && msg.receiver === chatUserId) || (msg.sender === chatUserId && msg.receiver === user?._id)
   })
+
+  // ! scroll2.
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+    })
+  }, [currentMessages.length, chatUserId])
 
   // ! select krta user ne
   const selectedUser = usersData.find((user) => user._id === chatUserId)
@@ -210,6 +236,20 @@ export default function UserList() {
   }
 
   // ! img4.
+  // ! Preview open hoy tyare background scroll lock
+  useEffect(() => {
+    if (preview) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [preview])
+
+  // ! img5.
   // File remove function
   const removePreview = () => {
     if (preview) {
@@ -225,7 +265,11 @@ export default function UserList() {
     }
   }
 
-  console.log('selectedUser', selectedUser)
+  // console.log('selectedUser', selectedUser)
+
+  if (shimmer) {
+    return <UserListShimmer />
+  }
 
   return (
     <div className="flex h-[calc(100vh-64px)] w-full">
@@ -260,12 +304,13 @@ export default function UserList() {
           </div>
         </div>
 
-        {/* USERS SCROLL */}
-
+        {/* users scroll all */}
         <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto pb-10">
           {filteredUsers.map((user) => {
             // console.log(user._id === chatUserId ? "black" : "green");
             // console.log(user)
+
+            console.log('user.lastMessage', user.lastMessage?.type)
             return (
               <div key={user._id} onClick={() => handleClick(user._id)} className={`flex h-18 cursor-pointer items-center gap-3 px-4 transition ${chatUserId === user._id ? 'bg-[#f0f2f5]' : 'hover:bg-[#f5f6f6]'}`}>
                 <div className="relative">
@@ -295,8 +340,9 @@ export default function UserList() {
                     </span>
                   </div>
 
-                  {/* <p className="mt-1 truncate text-sm text-[#667781]">Good Morning</p> */}
-                  <p className={`mt-1 truncate text-sm text-[#667781]`}>{user.lastMessage?.content || 'No messages yet'}</p>
+                  {/* <p className={`mt-1 truncate text-sm text-[#667781]`}>{user.lastMessage?.content || 'No messages yet'}</p> */}
+
+                  <p className={`mt-1 truncate text-sm text-[#667781]`}>{user.lastMessage?.type === 'image' ? '📷 photo' : user.lastMessage?.type === 'video' ? '🎥 video' : user.lastMessage?.content || 'No messages yet'}</p>
                 </div>
               </div>
             )
@@ -306,7 +352,7 @@ export default function UserList() {
 
       {/* RIGHT - CHAT */}
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2] pb-2">
+      <div className="flex min-w-0 flex-1 flex-col bg-[#efeae2] pb-2 relative">
         {!chatUserId ? (
           /* ================= EMPTY CHAT ================= */
 
@@ -326,8 +372,6 @@ export default function UserList() {
             {/* CHAT HEADER */}
             <div className="flex h-18 shrink-0 items-center justify-between border-b border-[#d1d7db] bg-[#f0f2f5] px-4">
               <div className="flex min-w-0 items-center gap-3">
-                {/* <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{selectedUser?.name?.charAt(0).toUpperCase()}</div> */}
-
                 {!selectedUser?.image ? (
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] text-lg font-semibold text-[#54656f]">{selectedUser?.name?.charAt(0).toUpperCase()}</div>
                 ) : (
@@ -355,7 +399,7 @@ export default function UserList() {
               </div>
             </div>
 
-            {/* MESSAGES ONLY SCROLL */}
+            {/* map message chat */}
             <div className="chat-scroll min-h-0 flex-1 overflow-y-auto px-8 py-6">
               <div className="mx-auto flex max-w-5xl flex-col gap-2">
                 <div className="my-3 flex justify-center">
@@ -370,14 +414,14 @@ export default function UserList() {
                       <div className={`max-w-[65%] rounded-lg shadow-sm ${msg.type === 'text' ? 'px-3 py-2' : 'p-1'} ${isMine ? 'bg-[#d9fdd3]' : 'bg-white'}`}>
                         <div>
                           {msg.type === 'image' ? (
-                            <img src={`http://localhost:3000${msg.content}`} alt="sent" className="max-h-80 max-w-sm rounded-lg object-contain" />
+                            <img src={`http://localhost:3000${msg.content}`} alt="sent" className="max-h-80 max-w-60 lg:max-w-100  rounded-lg object-contain" />
                           ) : msg.type === 'video' ? (
-                            <video src={`http://localhost:3000${msg.content}`} controls className="max-h-80 max-w-sm rounded-lg" />
+                            <video src={`http://localhost:3000${msg.content}`} controls className="max-h-80 max-w-60 lg:max-w-100 rounded-lg" />
                           ) : (
                             <p className="wrap-break-words px-2 py-1 text-[14px] leading-5 text-[#111b21]">{msg.content}</p>
                           )}
 
-                          <div className="flex items-center justify-end gap-1 px-1 pb-1">
+                          <div className="flex items-center justify-end  gap-1 px-1 pb-1">
                             <span className="text-[10px] text-[#667781]">
                               {new Date(msg.createdAt).toLocaleTimeString([], {
                                 hour: '2-digit',
@@ -388,15 +432,17 @@ export default function UserList() {
                             {isMine && <CheckCheck size={15} className="text-[#53bdeb]" />}
                           </div>
                         </div>
-
                       </div>
                     </div>
                   )
                 })}
+
+                {/* scroll3. logic last chat btave  */}
+                <div ref={chatEndRef} />
               </div>
             </div>
 
-            {/* MESSAGE INPUT FIXED */}
+            {/* footer emoji file input chat */}
             <div className="shrink-0 bg-[#f0f2f5] px-4 py-3">
               <form onSubmit={sendMessage} className="flex items-center gap-3">
                 {/* smile button */}
@@ -433,18 +479,18 @@ export default function UserList() {
                   <Paperclip size={25} />
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleImage} className="hidden" />
-                {/* img UI */}
+                {/*preview img UI */}
                 {preview && (
-                  <div className="mb-3 rounded-xl bg-white p-3 shadow-sm">
-                    <div className="absolute top-[25%] right-[25%]  ">
-                      {previewType === 'image' ? <img src={preview} alt="preview" className="max-h-100 max-w-150 rounded-lg object-contain" /> : <video src={preview} controls className="max-h-60 max-w-xs rounded-lg" />}
+                  <div className="fixed h-screen top-16 right-0 left-90 z-60 mb-3 flex flex-col items-center pt-25  bg-[#F7F5EF] p-3 shadow-sm">
+                    <div className=" relative">
+                      {previewType === 'image' ? <img src={preview} alt="preview" className="max-h-100 max-w-100 xl:max-w-150 rounded-lg object-contain" /> : <video src={preview} controls className="max-h-100 max-w-100 xl:max-w-150 rounded-lg" />}
 
-                      <button type="button" onClick={removePreview} className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                      <button type="button" onClick={removePreview} className="absolute right-0 top-0 m-2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
                         <X size={18} />
                       </button>
                     </div>
 
-                    <p className="mt-2 truncate text-xs text-[#667781]">{pimage?.name}</p>
+                    <p className="mt-2 truncate text-md text-[#667781] relative">{pimage?.name}</p>
                   </div>
                 )}
 
@@ -459,7 +505,7 @@ export default function UserList() {
                 />
 
                 {message.trim() || pimage ? (
-                  <button type="submit" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#00a884] text-white transition hover:bg-[#008f72]">
+                  <button type="submit" className="flex size-11 shrink-0 z-100 items-center justify-center rounded-full bg-[#00a884] text-white transition hover:bg-[#008f72]">
                     <Send size={19} />
                   </button>
                 ) : (

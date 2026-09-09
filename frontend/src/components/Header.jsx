@@ -21,7 +21,7 @@ export default function Header() {
           <MessageCircle size={23} className="text-white" strokeWidth={2.5} />
         </div>
 
-        <h1 className="text-xl font-semibold text-[#e9edef]">MineChat</h1>
+        <Link to={"/"} className="text-xl font-semibold text-[#e9edef]">MineChat</Link>
       </div>
 
       {/* ================= HEADER MENU ================= */}

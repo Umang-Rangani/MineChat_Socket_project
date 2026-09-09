@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { axiosInstance } from '../config/axiosConfig'
 import { useUser } from '../context/userProvider'
-import { Plus, Image, Video, Type, ArrowLeft, X, Send, ArrowRight, Trash2 } from 'lucide-react'
+import { Plus, Image, Video, Type, ArrowLeft, X, Send, ArrowRight, Trash2, MessageCircle, CircleDashed } from 'lucide-react'
 import { deleteFile, uploadFile } from '../utils/uploadFile'
+import UserListShimmer from './UserListShimmer'
+import StatusListShimmer from './StatusListShimmer'
 
 export default function StatusList() {
   const { user } = useUser()
@@ -36,11 +38,16 @@ export default function StatusList() {
   // img ne select krta create ma btava mte
   const [preview, setPreview] = useState(null)
 
+  // ! shimmmer
+  const [shimmer, setShimmer] = useState(false)
+
   // ! get users
   const getUsersData = async () => {
     try {
+      setShimmer(true)
       const res = await axiosInstance.get('/users')
       setUsersData(res.data)
+      setShimmer(false)
     } catch (error) {
       console.log(error)
     }
@@ -49,11 +56,14 @@ export default function StatusList() {
   // ! get status
   const getStatusData = async () => {
     try {
+      setShimmer(true)
+
       const res = await axiosInstance.get('/status')
 
       console.log('Status Data:', res.data)
 
       setStatusDataList(res.data)
+      setShimmer(false)
     } catch (error) {
       console.log('Status Error:', error)
     }
@@ -234,21 +244,26 @@ export default function StatusList() {
   }
 
   // console.log(statusView);
-  console.log('xxxxxx', selectedStatuses[currentStatusIndex])
+  // console.log('xxxxxx', selectedStatuses[currentStatusIndex])
+
+  if (shimmer) {
+    return <StatusListShimmer />
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#F5F5F0]">
-      {/* LEFT SIDEBAR */}
-
+      {/* left sidebar */}
       <div className="flex w-90 flex-col border-r border-gray-200">
         {/* HEADER */}
         <div className="flex h-20 items-center justify-between px-7">
           <h1 className="text-[26px] font-medium">Status</h1>
 
           {/* PLUS BUTTON */}
-          <button onClick={handleOpenCreate} className="flex bg-green-600 text-white h-8 w-8  items-center justify-center rounded-full transition hover:bg-green-800">
-            <Plus size={20} strokeWidth={2} />
-          </button>
+          {getLoginUserStatus(user?._id).length > 0 && (
+            <button onClick={handleOpenCreate} className="flex bg-green-600 text-white h-8 w-8  items-center justify-center rounded-full transition hover:bg-green-800">
+              <Plus size={20} strokeWidth={2} />
+            </button>
+          )}
         </div>
 
         {/* my status jova mate */}
@@ -357,121 +372,180 @@ export default function StatusList() {
         </div>
       </div>
 
-      {/* MAIN AREA */}
-
+      {/* right sidebar */}
       <div className="flex flex-1 bg-[#f8f7f6]">
         {/* HOME VIEW */}
-
-        {!selectedStatuses.length > 0 && statusView === 'home' && (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-full border-[7px] border-gray-300">
-                <div className="h-7 w-7 rounded-full bg-gray-300" />
+        {selectedStatuses.length === 0 && statusView === 'home' && (
+          <div className="flex min-h-0 flex-1 items-center justify-center bg-[#111b21] px-6">
+            <div className="w-full max-w-xl text-center">
+              {/* Icon */}
+              <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-[#202c33]">
+                <CircleDashed size={42} strokeWidth={1.5} className="text-[#8696a0]" />
               </div>
 
-              <h2 className="mb-4 text-[32px] font-normal">Share statuses</h2>
+              {/* Title */}
+              <h2 className="mb-3 text-2xl font-normal text-[#e9edef] sm:text-[28px]">Share statuses</h2>
 
-              <p className="text-[18px] text-gray-500">Share photos, videos and text that disappear after 24 hours.</p>
+              {/* Description */}
+              <p className="mx-auto max-w-lg text-sm leading-6 text-[#8696a0] sm:text-base">Share photos, videos and text that disappear after 24 hours.</p>
+
+              {/* Small Bottom Info */}
+              <div className="mx-auto mt-6 flex w-fit items-center gap-2 rounded-full bg-[#202c33] px-4 py-2 text-xs text-[#8696a0]">
+                <MessageCircle size={15} className="text-[#00a884]" />
+                Your status is private
+              </div>
             </div>
           </div>
         )}
 
         {/* create image & text input jova mate */}
-        {!selectedStatuses.length > 0 && statusView === 'create' && (
-          <div className="flex flex-1 flex-col">
-            {/* CREATE HEADER */}
-            <div className="flex h-20 items-center justify-between border-b border-gray-200 bg-white px-8">
-              <div className="flex items-center gap-4">
-                <button onClick={handleCloseCreate} className="rounded-full p-2 hover:bg-gray-100">
-                  <ArrowLeft size={24} />
+        {selectedStatuses.length === 0 && statusView === 'create' && (
+          <div className="flex min-h-0 flex-1 flex-col bg-[#f5f7f8]">
+            {/* ================= HEADER ================= */}
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#d1d7db] bg-[#111b21] px-4 text-[#e9edef] sm:px-6">
+              <div className="flex items-center gap-3">
+                <button onClick={handleCloseCreate} className="flex size-9 items-center justify-center rounded-full text-[#d1d7db] transition hover:bg-[#2a3942] hover:text-white">
+                  <ArrowLeft size={21} />
                 </button>
 
-                <h2 className="text-[22px] font-medium">Create status</h2>
+                <div>
+                  <h2 className="text-base font-medium sm:text-lg">Create status</h2>
+
+                  <p className="text-[11px] text-[#8696a0]">Share with your contacts</p>
+                </div>
               </div>
 
-              <button onClick={handleCloseCreate} className="rounded-full p-2 hover:bg-gray-100">
-                <X size={24} />
+              <button onClick={handleCloseCreate} className="flex size-9 items-center justify-center rounded-full text-[#8696a0] transition hover:bg-[#2a3942] hover:text-white">
+                <X size={20} />
               </button>
             </div>
 
-            {/* CREATE BODY */}
-            <div className="flex flex-1 items-center justify-center overflow-y-auto p-10">
-              {/* SELECT TYPE */}
-
+            {/* ================= BODY ================= */}
+            <div className="whatsapp-scroll min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+              {/* ================= SELECT TYPE ================= */}
               {!statusType && (
-                <div className="w-full max-w-3xl">
-                  <h3 className="mb-8 text-center text-2xl font-medium">What do you want to share?</h3>
+                <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center">
+                  <div className="mb-7 text-center">
+                    <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#d9fdd3]">
+                      <MessageCircle size={24} className="text-[#00a884]" />
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-8">
-                    {/* PHOTO / VIDEO BOX */}
-                    <button onClick={handleMediaStatus} className="group flex min-h-65 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
-                      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 transition group-hover:bg-[#d9fdd3]">
-                        <Image size={38} className="text-gray-600 group-hover:text-[#00a884]" />
+                    <h3 className="text-xl font-medium text-[#111b21] sm:text-2xl">What do you want to share?</h3>
+
+                    <p className="mt-2 text-sm text-[#667781]">Choose a type to create your status</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* PHOTO / VIDEO */}
+                    <button
+                      onClick={handleMediaStatus}
+                      className="group flex min-h-52 flex-col items-center justify-center rounded-2xl border border-[#d1d7db] bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#00a884] hover:shadow-md"
+                    >
+                      <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-[#f0f2f5] transition group-hover:bg-[#d9fdd3]">
+                        <Image size={32} strokeWidth={1.8} className="text-[#667781] transition group-hover:text-[#00a884]" />
                       </div>
 
-                      <h4 className="text-xl font-medium">Photos & Videos</h4>
+                      <h4 className="text-base font-semibold text-[#111b21]">Photos & Videos</h4>
 
-                      <p className="mt-2 text-gray-500">Share an image or video</p>
+                      <p className="mt-1.5 text-center text-sm text-[#667781]">Share an image or video</p>
                     </button>
 
-                    {/* TEXT BOX */}
-                    <button onClick={handleTextStatus} className="group flex min-h-65 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white transition hover:border-[#00a884] hover:shadow-md">
-                      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 transition group-hover:bg-[#d9fdd3]">
-                        <Type size={38} className="text-gray-600 group-hover:text-[#00a884]" />
+                    {/* TEXT */}
+                    <button
+                      onClick={handleTextStatus}
+                      className="group flex min-h-52 flex-col items-center justify-center rounded-2xl border border-[#d1d7db] bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#00a884] hover:shadow-md"
+                    >
+                      <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-[#f0f2f5] transition group-hover:bg-[#d9fdd3]">
+                        <Type size={32} strokeWidth={1.8} className="text-[#667781] transition group-hover:text-[#00a884]" />
                       </div>
 
-                      <h4 className="text-xl font-medium">Text Status</h4>
+                      <h4 className="text-base font-semibold text-[#111b21]">Text Status</h4>
 
-                      <p className="mt-2 text-gray-500">Share something with your contacts</p>
+                      <p className="mt-1.5 text-center text-sm text-[#667781]">Share something with your contacts</p>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* TEXT FORM */}
-
+              {/* ================= TEXT STATUS ================= */}
               {statusType === 'text' && (
-                <div className="w-full max-w-2xl">
-                  <div className="rounded-2xl bg-white p-8 shadow-sm">
-                    <div className="mb-6 flex items-center justify-between">
-                      <h3 className="text-2xl font-medium">Create text status</h3>
+                <div className="mx-auto flex min-h-full w-full max-w-2xl items-center justify-center">
+                  <div className="w-full rounded-2xl border border-[#e1e7e9] bg-white shadow-sm">
+                    {/* Form Header */}
+                    <div className="flex items-center justify-between border-b border-[#e9edef] px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-[#d9fdd3]">
+                          <Type size={18} className="text-[#00a884]" />
+                        </div>
 
-                      <button onClick={() => setStatusType(null)} className="rounded-full p-2 hover:bg-gray-100">
-                        <ArrowLeft size={22} />
+                        <div>
+                          <h3 className="text-base font-semibold text-[#111b21]">Create text status</h3>
+
+                          <p className="text-xs text-[#8696a0]">Write something to share</p>
+                        </div>
+                      </div>
+
+                      <button onClick={() => setStatusType(null)} className="flex size-9 items-center justify-center rounded-full text-[#667781] transition hover:bg-[#f0f2f5]">
+                        <ArrowLeft size={20} />
                       </button>
                     </div>
 
-                    <textarea
-                      name="content"
-                      value={statusData.content}
-                      onChange={handleChange}
-                      placeholder="What's on your mind?"
-                      className="h-52 w-full resize-none rounded-xl border border-gray-200 p-5 text-lg outline-none focus:border-[#00a884]"
-                    />
+                    {/* Form Body */}
+                    <div className="p-5">
+                      <textarea
+                        name="content"
+                        value={statusData.content}
+                        onChange={handleChange}
+                        placeholder="What's on your mind?"
+                        className="h-44 w-full resize-none rounded-xl border border-[#d1d7db] bg-[#f7f9fa] p-4 text-base text-[#111b21] outline-none transition placeholder:text-[#8696a0] focus:border-[#00a884] focus:bg-white focus:ring-2 focus:ring-[#00a884]/10"
+                      />
 
-                    <input
-                      type="text"
-                      name="description"
-                      value={statusData.description}
-                      onChange={handleChange}
-                      placeholder="Add description..."
-                      className="mt-4 w-full rounded-xl border border-gray-200 px-5 py-4 outline-none focus:border-[#00a884]"
-                    />
+                      <input
+                        type="text"
+                        name="description"
+                        value={statusData.description}
+                        onChange={handleChange}
+                        placeholder="Add description..."
+                        className="mt-3 h-12 w-full rounded-xl border border-[#d1d7db] bg-white px-4 text-sm text-[#111b21] outline-none transition placeholder:text-[#8696a0] focus:border-[#00a884] focus:ring-2 focus:ring-[#00a884]/10"
+                      />
 
-                    <button onClick={handlePublish} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#00a884] py-4 font-medium text-white transition hover:bg-[#008f72]">
-                      <Send size={19} />
-                      Publish Status
-                    </button>
+                      <button onClick={handlePublish} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00a884] text-sm font-semibold text-white transition hover:bg-[#008f72] hover:shadow-md">
+                        <Send size={18} />
+                        Publish Status
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* image & video mate nu form */}
+              {/* ================= MEDIA STATUS ================= */}
               {statusType === 'media' && (
-                <div className="w-full max-w-2xl pb-10">
-                  <div className="rounded-2xl bg-white p-8 shadow-sm">
-                    <div className="mb-6 flex items-center justify-between">
-                      <h3 className="text-2xl font-medium">Create media status</h3>
+                <div className="mx-auto flex w-full max-w-4xl items-start justify-center py-3 sm:py-4">
+                  <div className="w-full overflow-hidden rounded-2xl border border-[#d1d7db] bg-white shadow-sm">
+                    {/* ================= CREATE STATUS HEADER ================= */}
+                    <div className="flex h-14 w-full items-center justify-between border-b border-[#e9edef] bg-[#f7f9fa] px-4 sm:px-5">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setStatusType(null)
+                            setPimage(null)
+                            setPreview(null)
+                          }}
+                          className="flex size-9 shrink-0 items-center justify-center rounded-full text-[#54656f] transition hover:bg-[#e9edef] hover:text-[#111b21]"
+                        >
+                          <ArrowLeft size={20} />
+                        </button>
+
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Image size={18} className="text-[#00a884]" />
+
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-semibold text-[#111b21]">Create media status</h3>
+
+                            <p className="hidden text-[11px] text-[#8696a0] sm:block">Add a photo or video</p>
+                          </div>
+                        </div>
+                      </div>
 
                       <button
                         onClick={() => {
@@ -479,64 +553,114 @@ export default function StatusList() {
                           setPimage(null)
                           setPreview(null)
                         }}
-                        className="rounded-full p-2 hover:bg-gray-100"
+                        className="flex size-8 items-center justify-center rounded-full text-[#8696a0] transition hover:bg-[#e9edef] hover:text-[#111b21]"
                       >
-                        <ArrowLeft size={22} />
+                        <X size={18} />
                       </button>
                     </div>
 
-                    {/* HIDDEN FILE INPUT */}
-                    <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleImage} className="hidden" />
+                    {/* ================= BODY ================= */}
+                    <div className="grid w-full grid-cols-1 lg:h-110 lg:grid-cols-2">
+                      {/* ================= LEFT : MEDIA ================= */}
+                      <div className="flex  items-center justify-center bg-[#111b21] p-3 h-86 sm:h-95 lg:h-full">
+                        <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleImage} className="hidden" />
 
-                    {/* PREVIEW */}
-                    {preview ? (
-                      <div className="relative overflow-hidden rounded-xl bg-black">
-                        {pimage?.type?.startsWith('video/') ? <video src={preview} controls className="max-h-100 w-full object-contain" /> : <img src={preview} alt="preview" className="max-h-100 w-full object-contain" />}
+                        {preview ? (
+                          <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl">
+                            {pimage?.type?.startsWith('video/') ? (
+                              <video src={preview} controls className="max-h-102 max-w-full rounded-lg object-contain" />
+                            ) : (
+                              <img src={preview} alt="preview" className="max-h-102 max-w-full rounded-lg object-contain" />
+                            )}
 
-                        <button
-                          onClick={() => {
-                            setPimage(null)
-                            setPreview(null)
-                          }}
-                          className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white hover:bg-black"
-                        >
-                          <X size={20} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPimage(null)
+                                setPreview(null)
+                              }}
+                              className="absolute right-0 top-0 flex size-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
+                            >
+                              <X size={17} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="group flex h-full w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#3b4a54] bg-[#18252b] transition hover:border-[#00a884] hover:bg-[#202c33]"
+                          >
+                            <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-[#2a3942] transition group-hover:bg-[#d9fdd3]">
+                              <Image size={28} strokeWidth={1.7} className="text-[#8696a0] transition group-hover:text-[#00a884]" />
+                            </div>
+
+                            <p className="text-sm font-semibold text-[#e9edef]">Select photo or video</p>
+
+                            <p className="mt-1 text-xs text-[#8696a0]">Click to choose a file</p>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* ================= RIGHT : DETAILS ================= */}
+                      <div className="flex h-87 flex-col bg-[#ffffff] p-5 sm:h-95 sm:p-6 lg:h-full">
+                        {/* Heading */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="flex size-8 items-center justify-center rounded-full bg-[#e7fcef]">
+                              <MessageCircle size={17} className="text-[#00a884]" />
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-semibold text-[#111b21]">Status details</h4>
+
+                              <p className="text-[11px] text-[#8696a0]">Add a description</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="relative">
+                          <MessageCircle size={17} className="absolute left-4 top-4 text-[#8696a0]" />
+
+                          <textarea
+                            name="description"
+                            value={statusData.description}
+                            onChange={handleChange}
+                            placeholder="Add description..."
+                            rows={4}
+                            className="min-h-28 w-full resize-none rounded-xl border border-[#d1d7db] bg-[#f7f9fa] py-3 pl-11 pr-4 text-sm text-[#111b21] outline-none transition placeholder:text-[#8696a0] focus:border-[#00a884] focus:bg-white focus:ring-2 focus:ring-[#00a884]/10"
+                          />
+                        </div>
+
+                        {/* Spacer */}
+                        <div className="flex-1" />
+
+                        {/* Info */}
+                        <div className="mb-3 rounded-xl border border-[#b7ead9] bg-[#e7fcef] p-3">
+                          <div className="flex gap-3">
+                            <Image size={17} className="mt-0.5 shrink-0 text-[#00a884]" />
+
+                            <div>
+                              <p className="text-xs font-semibold text-[#111b21]">Your status</p>
+
+                              <p className="mt-1 text-[11px] leading-4 text-[#667781]">Photos and videos disappear after 24 hours.</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Publish */}
+                        <button type="button" onClick={handlePublish} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#00a884] text-sm font-semibold text-white transition hover:bg-[#008f72] hover:shadow-md">
+                          <Send size={17} />
+                          Publish Status
                         </button>
                       </div>
-                    ) : (
-                      <button onClick={() => fileInputRef.current?.click()} className="flex h-64 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition hover:border-[#00a884]">
-                        <Image size={50} className="mb-4 text-gray-400" />
-
-                        <p className="text-lg font-medium">Select photo or video</p>
-
-                        <p className="mt-2 text-gray-500">Click to choose a file</p>
-                      </button>
-                    )}
-
-                    {/* DESCRIPTION */}
-                    <input
-                      type="text"
-                      name="description"
-                      value={statusData.description}
-                      onChange={handleChange}
-                      placeholder="Add description..."
-                      className="mt-5 w-full rounded-xl border border-gray-200 px-5 py-4 outline-none focus:border-[#00a884]"
-                    />
-
-                    {/* PUBLISH */}
-                    <button onClick={handlePublish} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#00a884] py-4 font-medium text-white transition hover:bg-[#008f72]">
-                      <Send size={19} />
-                      Publish Status
-                    </button>
+                    </div>
                   </div>
                 </div>
               )}
-
-
             </div>
           </div>
         )}
-
 
         {/* status jova mate */}
         {selectedStatuses.length > 0 && (
@@ -577,7 +701,7 @@ export default function StatusList() {
                     </button>
 
                     {selectedStatuses[currentStatusIndex].userId._id == user?._id && (
-                      <button onClick={handleDeleteStatus} className="rounded-full bg-red-200 p-2 text-red-600 hover:bg-red-300">
+                      <button onClick={handleDeleteStatus} className=" rounded-full p-2 hover:bg-white/20">
                         <Trash2 size={20} />
                       </button>
                     )}
@@ -635,9 +759,6 @@ export default function StatusList() {
             </div>
           </div>
         )}
-
-
-
       </div>
     </div>
   )
