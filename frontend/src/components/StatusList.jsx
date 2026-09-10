@@ -29,6 +29,8 @@ export default function StatusList() {
   const [statusData, setStatusData] = useState({
     content: '',
     description: '',
+    backgroundColor: '#00a884',
+    textColor: '#ffffff',
   })
 
   // upload file mate
@@ -163,6 +165,8 @@ export default function StatusList() {
           type: 'text',
           content: statusData.content,
           description: statusData.description,
+          textColor: statusData.textColor,
+          backgroundColor: statusData.backgroundColor,
         }
 
         console.log('Text status data:', data)
@@ -470,46 +474,98 @@ export default function StatusList() {
               {/* ================= TEXT STATUS ================= */}
               {statusType === 'text' && (
                 <div className="mx-auto flex min-h-full w-full max-w-2xl items-center justify-center">
-                  <div className="w-full rounded-2xl border border-[#e1e7e9] bg-white shadow-sm">
+                  <div className="w-full overflow-hidden rounded-2xl border border-[#e1e7e9] shadow-sm" style={{ backgroundColor: statusData.backgroundColor }}>
                     {/* Form Header */}
-                    <div className="flex items-center justify-between border-b border-[#e9edef] px-5 py-4">
+                    <div className="flex items-center justify-between border-b border-white/20 bg-black/10 px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-full bg-[#d9fdd3]">
-                          <Type size={18} className="text-[#00a884]" />
+                        <div className="flex size-9 items-center justify-center rounded-full bg-white/20">
+                          <Type size={18} className="text-white" />
                         </div>
 
                         <div>
-                          <h3 className="text-base font-semibold text-[#111b21]">Create text status</h3>
+                          <h3 className="text-base font-semibold text-white">Create text status</h3>
 
-                          <p className="text-xs text-[#8696a0]">Write something to share</p>
+                          <p className="text-xs text-white/70">Write something to share</p>
                         </div>
                       </div>
 
-                      <button onClick={() => setStatusType(null)} className="flex size-9 items-center justify-center rounded-full text-[#667781] transition hover:bg-[#f0f2f5]">
-                        <ArrowLeft size={20} />
-                      </button>
+                      {/* Colors */}
+                      <div className="flex items-center gap-2">
+                        {/* Background color */}
+                        <label className="relative size-7 cursor-pointer overflow-hidden rounded-full border-2 border-white/70 shadow-sm" style={{ backgroundColor: statusData.backgroundColor }} title="Background color">
+                          <input
+                            type="color"
+                            value={statusData.backgroundColor}
+                            onChange={(e) =>
+                              setStatusData((prev) => ({
+                                ...prev,
+                                backgroundColor: e.target.value,
+                              }))
+                            }
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          />
+                        </label>
+
+                        {/* Text color */}
+                        <label className="relative flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-white/70 bg-white shadow-sm" title="Text color">
+                          <span className="size-4 rounded-full" style={{ backgroundColor: statusData.textColor }} />
+
+                          <input
+                            type="color"
+                            value={statusData.textColor}
+                            onChange={(e) =>
+                              setStatusData((prev) => ({
+                                ...prev,
+                                textColor: e.target.value,
+                              }))
+                            }
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          />
+                        </label>
+
+                        <button onClick={() => setStatusType(null)} className="ml-1 flex size-9 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10">
+                          <ArrowLeft size={20} />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Form Body */}
-                    <div className="p-5">
+                    {/* Status Preview / Form Body */}
+                    <div
+                      className="flex min-h-105 flex-col justify-center p-8"
+                      style={{
+                        backgroundColor: statusData.backgroundColor,
+                        color: statusData.textColor,
+                      }}
+                    >
+                      {/* Text input */}
                       <textarea
                         name="content"
                         value={statusData.content}
                         onChange={handleChange}
                         placeholder="What's on your mind?"
-                        className="h-44 w-full resize-none rounded-xl border border-[#d1d7db] bg-[#f7f9fa] p-4 text-base text-[#111b21] outline-none transition placeholder:text-[#8696a0] focus:border-[#00a884] focus:bg-white focus:ring-2 focus:ring-[#00a884]/10"
+                        style={{
+                          color: statusData.textColor,
+                          caretColor: statusData.textColor,
+                        }}
+                        className="min-h-55 w-full resize-none border-none bg-transparent p-6 text-center text-4xl font-semibold leading-tight outline-none placeholder:opacity-50 focus:ring-0"
                       />
 
+                      {/* Description */}
                       <input
                         type="text"
                         name="description"
                         value={statusData.description}
                         onChange={handleChange}
                         placeholder="Add description..."
-                        className="mt-3 h-12 w-full rounded-xl border border-[#d1d7db] bg-white px-4 text-sm text-[#111b21] outline-none transition placeholder:text-[#8696a0] focus:border-[#00a884] focus:ring-2 focus:ring-[#00a884]/10"
+                        style={{
+                          color: statusData.textColor,
+                          caretColor: statusData.textColor,
+                        }}
+                        className="mt-4 h-12 w-full border-none bg-transparent px-4 text-center text-sm outline-none placeholder:opacity-50 focus:ring-0"
                       />
 
-                      <button onClick={handlePublish} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00a884] text-sm font-semibold text-white transition hover:bg-[#008f72] hover:shadow-md">
+                      {/* Publish */}
+                      <button onClick={handlePublish} className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-black/20 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-black/30">
                         <Send size={18} />
                         Publish Status
                       </button>
@@ -713,25 +769,36 @@ export default function StatusList() {
               <div className="flex flex-1 items-center justify-center">
                 {selectedStatuses[currentStatusIndex]?.type === 'text' ? (
                   <div
-                    className="flex h-full w-full items-center justify-center px-10 text-center text-white"
+                    className="flex h-130 w-120 items-center justify-center px-10 text-center"
                     style={{
                       backgroundColor: selectedStatuses[currentStatusIndex]?.backgroundColor || '#000000',
+                      color: selectedStatuses[currentStatusIndex]?.textColor || '#ffffff',
                     }}
                   >
                     <div>
                       <p className="text-4xl font-medium">{selectedStatuses[currentStatusIndex]?.content}</p>
 
-                      {selectedStatuses[currentStatusIndex]?.description && <p className="mt-5 text-lg text-gray-300">{selectedStatuses[currentStatusIndex].description}</p>}
+                      {selectedStatuses[currentStatusIndex]?.description && (
+                        <p
+                          className="mt-5 text-lg"
+                          style={{
+                            color: selectedStatuses[currentStatusIndex]?.textColor || '#ffffff',
+                            opacity: 0.75,
+                          }}
+                        >
+                          {selectedStatuses[currentStatusIndex].description}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : selectedStatuses[currentStatusIndex]?.type === 'image' ? (
-                  <div className="relative flex h-140 w-120 items-center justify-center bg-[#111B21]">
+                  <div className="relative flex h-130 w-120 items-center justify-center bg-[#111B21]">
                     <img src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} alt="status" className="max-h-full max-w-full object-contain" />
 
                     {selectedStatuses[currentStatusIndex]?.description && <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-5 py-3 text-center text-white">{selectedStatuses[currentStatusIndex].description}</div>}
                   </div>
                 ) : selectedStatuses[currentStatusIndex]?.type === 'video' ? (
-                  <div className="relative flex h-full w-full items-center justify-center bg-black">
+                  <div className="relative flex  h-130 w-120 items-center justify-center bg-black">
                     <video src={`http://localhost:3000${selectedStatuses[currentStatusIndex]?.content}`} controls={false} autoPlay loop className="max-h-full max-w-full object-contain z-40" />
 
                     {selectedStatuses[currentStatusIndex]?.description && (
@@ -745,7 +812,7 @@ export default function StatusList() {
 
               {/* PREVIOUS BUTTON */}
               {currentStatusIndex > 0 && (
-                <button onClick={() => setCurrentStatusIndex((prev) => prev - 1)} className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-4 text-white hover:bg-black/70">
+                <button onClick={() => setCurrentStatusIndex((prev) => prev - 1)} className="absolute left-5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-4 text-white hover:bg-black/70 ">
                   <ArrowLeft size={25} />
                 </button>
               )}

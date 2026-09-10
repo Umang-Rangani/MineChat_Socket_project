@@ -12,7 +12,7 @@ const statusSchema = new mongoose.Schema(
       type: String,
       enum: ['text', 'image', 'video'],
       default: 'text',
-    },    
+    },
 
     content: {
       type: String,
@@ -26,6 +26,10 @@ const statusSchema = new mongoose.Schema(
     backgroundColor: {
       type: String,
       default: '#000000',
+    },
+    textColor: {
+      type: String,
+      default: '#ffffff',
     },
 
     viewers: [

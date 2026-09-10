@@ -51,9 +51,10 @@ router.get('/my-status', authMiddleware, async (req, res) => {
 
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { content, description, type, backgroundColor } = req.body
+    const { content, description, type, backgroundColor  , textColor} = req.body
 
-    console.log('content, description, type, backgroundColor ', content, description, type, backgroundColor)
+
+    console.log('content, description, type, backgroundColor ', content, description, type, backgroundColor , textColor)
 
     const userId = req.user.userId
 
@@ -63,6 +64,7 @@ router.post('/', authMiddleware, async (req, res) => {
       description,
       type,
       backgroundColor,
+      textColor
     })
 
     res.status(201).json(data)
